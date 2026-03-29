@@ -1,0 +1,10 @@
+# Node / Vite
+CapyPocket/node_modules/
+
+# Flutter project internals under capyproject
+capyproject/.git/
+capyproject/.dart_tool/
+capyproject/.idea/
+capyproject/build/
+capyproject/.flutter-plugins-dependencies
+capyproject/CapyPocket/
