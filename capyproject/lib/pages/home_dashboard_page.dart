@@ -1,15 +1,15 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
+import '../data/capy_database.dart';
 import '../data/capy_models.dart';
 import '../state/capy_app_store.dart';
 import '../state/capy_scope.dart';
 import 'ui_kit.dart';
 
 class HomeDashboardPage extends StatelessWidget {
-  const HomeDashboardPage({
-    super.key,
-    this.showFrame = true,
-  });
+  const HomeDashboardPage({super.key, this.showFrame = true});
 
   final bool showFrame;
 
@@ -44,6 +44,8 @@ class HomeDashboardPage extends StatelessWidget {
                           : 'Shake your phone anytime to open quick add.',
                       style: theme.textTheme.bodyMedium,
                     ),
+                    const SizedBox(height: 10),
+                    const _DatabaseHealthChip(),
                   ],
                 ),
               ),
@@ -85,7 +87,10 @@ class HomeDashboardPage extends StatelessWidget {
                             navigateToTab(context, AppTab.money);
                             return;
                           default:
-                            showSavedMessage(context, '${action.title} coming soon');
+                            showSavedMessage(
+                              context,
+                              '${action.title} coming soon',
+                            );
                             return;
                         }
                       },
@@ -124,7 +129,8 @@ class HomeDashboardPage extends StatelessWidget {
               subtitle:
                   'Your home feed will appear here after the first income, expense or pocket transfer is added.',
               actionLabel: 'Add first transaction',
-              onPressed: () => Navigator.of(context).pushNamed('/add-transaction'),
+              onPressed: () =>
+                  Navigator.of(context).pushNamed('/add-transaction'),
               icon: Icons.receipt_long_outlined,
             )
           else
@@ -192,7 +198,9 @@ class _BalanceHeroCard extends StatelessWidget {
                     width: 8,
                     height: 8,
                     decoration: BoxDecoration(
-                      color: capyInkColor.withValues(alpha: index == 0 ? 1 : 0.18),
+                      color: capyInkColor.withValues(
+                        alpha: index == 0 ? 1 : 0.18,
+                      ),
                       shape: BoxShape.circle,
                     ),
                   ),
@@ -226,7 +234,8 @@ class _BalanceHeroCard extends StatelessWidget {
                 Expanded(
                   child: InlineMetric(
                     label: 'Income',
-                    value: '+${formatMoney(store.totalIncome).replaceFirst('฿', '฿')}',
+                    value:
+                        '+${formatMoney(store.totalIncome).replaceFirst('฿', '฿')}',
                     positive: true,
                   ),
                 ),
@@ -234,14 +243,16 @@ class _BalanceHeroCard extends StatelessWidget {
                 Expanded(
                   child: InlineMetric(
                     label: 'Expense',
-                    value: '-${formatMoney(store.totalExpense).replaceFirst('฿', '฿')}',
+                    value:
+                        '-${formatMoney(store.totalExpense).replaceFirst('฿', '฿')}',
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: InlineMetric(
                     label: 'Pocket',
-                    value: '+${formatMoney(store.totalPocketSaved).replaceFirst('฿', '฿')}',
+                    value:
+                        '+${formatMoney(store.totalPocketSaved).replaceFirst('฿', '฿')}',
                     positive: true,
                   ),
                 ),
@@ -284,7 +295,10 @@ class _GoalProgressCard extends StatelessWidget {
                   ],
                 ),
               ),
-              Text('${(goal.progress * 100).round()}%', style: theme.textTheme.titleLarge),
+              Text(
+                '${(goal.progress * 100).round()}%',
+                style: theme.textTheme.titleLarge,
+              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -319,7 +333,9 @@ class _RecentTransactionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final amountColor = transaction.isPositive ? capyPositiveColor : capyNegativeColor;
+    final amountColor = transaction.isPositive
+        ? capyPositiveColor
+        : capyNegativeColor;
     final icon = switch (transaction.type) {
       CapyTransactionType.income => Icons.arrow_downward_rounded,
       CapyTransactionType.pocket => Icons.savings_rounded,
@@ -343,7 +359,10 @@ class _RecentTransactionTile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(transaction.title, style: Theme.of(context).textTheme.titleMedium),
+                Text(
+                  transaction.title,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
                 const SizedBox(height: 2),
                 Text(
                   '${transaction.category} • ${formatShortDate(transaction.createdAt)}',
@@ -354,11 +373,97 @@ class _RecentTransactionTile extends StatelessWidget {
           ),
           Text(
             transaction.signedAmountLabel,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: amountColor,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(color: amountColor),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _DatabaseHealthChip extends StatefulWidget {
+  const _DatabaseHealthChip();
+
+  @override
+  State<_DatabaseHealthChip> createState() => _DatabaseHealthChipState();
+}
+
+class _DatabaseHealthChipState extends State<_DatabaseHealthChip> {
+  Timer? _timer;
+  CapyDatabaseHealth? _health;
+
+  @override
+  void initState() {
+    super.initState();
+    _refreshHealth();
+    _timer = Timer.periodic(const Duration(seconds: 8), (_) {
+      _refreshHealth();
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _refreshHealth() async {
+    final result = await CapyDatabase.instance.checkHealth();
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _health = result;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final health = _health;
+    final connected = health?.connected ?? false;
+    final color = health == null
+        ? capyInkColor.withValues(alpha: 0.55)
+        : connected
+        ? capyPositiveColor
+        : capyNegativeColor;
+
+    final label = health == null
+        ? 'DB: checking...'
+        : 'DB: ${health.mode} ${connected ? 'online' : 'offline'} (${health.latencyMs}ms)';
+
+    return Tooltip(
+      message: health?.detail ?? 'Checking database connection',
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: color.withValues(alpha: 0.35)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              connected ? Icons.cloud_done_rounded : Icons.cloud_off_rounded,
+              size: 16,
+              color: color,
+            ),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  color: color,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

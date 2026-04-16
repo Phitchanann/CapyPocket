@@ -5,13 +5,16 @@ import '../data/capy_models.dart';
 
 class CapyAppStore extends ChangeNotifier {
   CapyAppStore({CapyDatabase? database})
-      : _database = database ?? CapyDatabase.instance;
+    : _database = database ?? CapyDatabase.instance;
 
   final CapyDatabase _database;
 
   bool _isReady = false;
   bool _isSaving = false;
   String? _errorMessage;
+  bool _isLoggedIn = false;
+  String? _currentUsername;
+  CapyUser? _currentUser;
 
   List<CapyTransaction> _transactions = const [];
   List<CapyCategory> _categories = const [];
@@ -20,6 +23,16 @@ class CapyAppStore extends ChangeNotifier {
   bool get isReady => _isReady;
   bool get isSaving => _isSaving;
   String? get errorMessage => _errorMessage;
+  bool get isLoggedIn => _isLoggedIn;
+  String? get currentUsername => _currentUsername;
+  CapyUser? get currentUser => _currentUser;
+  String get currentDisplayName =>
+      _currentUser?.displayName ?? _currentUsername ?? 'User';
+  double get currentPocketSaved =>
+      _currentUser?.pocketSaved ?? totalPocketSaved;
+  double get currentCashBalance =>
+      _currentUser?.cashBalance ?? availableBalance;
+  double get currentSavingsGoal => _currentUser?.savingsGoal ?? 0;
 
   List<CapyTransaction> get transactions => List.unmodifiable(_transactions);
   List<CapyCategory> get categories => List.unmodifiable(_categories);
@@ -34,6 +47,7 @@ class CapyAppStore extends ChangeNotifier {
   Future<void> refresh() async {
     try {
       _errorMessage = null;
+      _currentUser = await _database.currentUser();
       _categories = await _database.fetchCategories();
       _transactions = await _database.fetchTransactions();
       _goals = await _database.fetchGoals();
@@ -71,8 +85,11 @@ class CapyAppStore extends ChangeNotifier {
   List<double> get weeklyExpensePoints {
     final now = DateTime.now();
     return List<double>.generate(7, (index) {
-      final day = DateTime(now.year, now.month, now.day)
-          .subtract(Duration(days: 6 - index));
+      final day = DateTime(
+        now.year,
+        now.month,
+        now.day,
+      ).subtract(Duration(days: 6 - index));
       return _transactions
           .where(
             (item) =>
@@ -90,10 +107,35 @@ class CapyAppStore extends ChangeNotifier {
     for (final item in _transactions.where(
       (entry) => entry.type == CapyTransactionType.expense,
     )) {
-      result.update(item.category, (value) => value + item.amount,
-          ifAbsent: () => item.amount);
+      result.update(
+        item.category,
+        (value) => value + item.amount,
+        ifAbsent: () => item.amount,
+      );
     }
     return result;
+  }
+
+  void login(String username) {
+    _isLoggedIn = true;
+    _currentUsername = username;
+    notifyListeners();
+  }
+
+  void loginUser(CapyUser user) {
+    _isLoggedIn = true;
+    _currentUsername = user.username;
+    _currentUser = user;
+    _database.setActiveUserId(user.id);
+    notifyListeners();
+  }
+
+  void logout() {
+    _isLoggedIn = false;
+    _currentUsername = null;
+    _currentUser = null;
+    _database.setActiveUserId(null);
+    notifyListeners();
   }
 
   Future<void> addTransaction({

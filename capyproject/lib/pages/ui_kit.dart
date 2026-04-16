@@ -547,12 +547,7 @@ class AmountChip extends StatelessWidget {
 }
 
 class KeypadButton extends StatelessWidget {
-  const KeypadButton({
-    super.key,
-    this.label,
-    this.icon,
-    this.onTap,
-  });
+  const KeypadButton({super.key, this.label, this.icon, this.onTap});
 
   final String? label;
   final IconData? icon;
@@ -572,7 +567,10 @@ class KeypadButton extends StatelessWidget {
         child: Center(
           child: icon != null
               ? Icon(icon, color: capyInkColor)
-              : Text(label ?? '', style: Theme.of(context).textTheme.titleLarge),
+              : Text(
+                  label ?? '',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
         ),
       ),
     );
@@ -780,7 +778,9 @@ class SettingLine extends StatelessWidget {
             ),
           ),
           Icon(
-            onTap == null ? Icons.info_outline_rounded : Icons.chevron_right_rounded,
+            onTap == null
+                ? Icons.info_outline_rounded
+                : Icons.chevron_right_rounded,
             color: capyMutedColor,
           ),
         ],
@@ -791,10 +791,7 @@ class SettingLine extends StatelessWidget {
       return card;
     }
 
-    return GestureDetector(
-      onTap: onTap,
-      child: card,
-    );
+    return GestureDetector(onTap: onTap, child: card);
   }
 }
 
@@ -838,19 +835,45 @@ class SettingToggle extends StatelessWidget {
   }
 }
 
-class AuthCard extends StatelessWidget {
+class AuthCard extends StatefulWidget {
   const AuthCard({
     super.key,
     required this.title,
     required this.subtitle,
     required this.buttonLabel,
     required this.fields,
+    this.onSubmit,
   });
 
   final String title;
   final String subtitle;
   final String buttonLabel;
   final List<String> fields;
+  final Function(String username)? onSubmit;
+
+  @override
+  State<AuthCard> createState() => _AuthCardState();
+}
+
+class _AuthCardState extends State<AuthCard> {
+  late List<TextEditingController> _controllers;
+
+  @override
+  void initState() {
+    super.initState();
+    _controllers = List.generate(
+      widget.fields.length,
+      (_) => TextEditingController(),
+    );
+  }
+
+  @override
+  void dispose() {
+    for (final controller in _controllers) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -860,22 +883,30 @@ class AuthCard extends StatelessWidget {
         children: [
           const Center(child: CapyBadge(size: 66, halo: true)),
           const SizedBox(height: 16),
-          Text(title, style: Theme.of(context).textTheme.titleLarge),
+          Text(widget.title, style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 6),
-          Text(subtitle, style: Theme.of(context).textTheme.bodyMedium),
+          Text(widget.subtitle, style: Theme.of(context).textTheme.bodyMedium),
           const SizedBox(height: 16),
-          ...fields.map(
-            (field) => Padding(
+          ..._controllers.asMap().entries.map((entry) {
+            final field = widget.fields[entry.key];
+            final controller = entry.value;
+            return Padding(
               padding: const EdgeInsets.only(bottom: 12),
               child: TextField(
+                controller: controller,
                 obscureText: field.toLowerCase().contains('password'),
                 decoration: InputDecoration(labelText: field),
               ),
-            ),
-          ),
+            );
+          }),
           FilledButton(
-            onPressed: () => showSavedMessage(context, '$title preview saved'),
-            child: Text(buttonLabel),
+            onPressed: () {
+              final username = _controllers.first.text.isNotEmpty
+                  ? _controllers.first.text
+                  : 'User';
+              widget.onSubmit?.call(username);
+            },
+            child: Text(widget.buttonLabel),
           ),
         ],
       ),
@@ -1435,12 +1466,11 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
     final viewInsets = MediaQuery.of(context).viewInsets.bottom;
     final store = CapyScope.watch(context);
     final categoryOptions = store.categories;
-    if (categoryOptions.isNotEmpty &&
-        !categoryOptions.any((item) => item.name == category)) {
-      category = categoryOptions.first.name;
-    } else if (categoryOptions.isEmpty) {
-      category = null;
-    }
+    final selectedCategory =
+        categoryOptions.any((item) => item.name == category)
+        ? category
+        : (categoryOptions.isNotEmpty ? categoryOptions.first.name : null);
+    category = selectedCategory;
 
     return Padding(
       padding: EdgeInsets.only(bottom: viewInsets),
@@ -1513,13 +1543,8 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
-                  initialValue:
-                      categoryOptions.any((item) => item.name == category)
-                      ? category
-                      : null,
-                  decoration: const InputDecoration(
-                    labelText: 'Category',
-                  ),
+                  initialValue: selectedCategory,
+                  decoration: const InputDecoration(labelText: 'Category'),
                   items: categoryOptions
                       .map(
                         (item) => DropdownMenuItem(
@@ -1558,10 +1583,7 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
 }
 
 class _GoalSetupSheet extends StatefulWidget {
-  const _GoalSetupSheet({
-    required this.rootContext,
-    this.initialGoal,
-  });
+  const _GoalSetupSheet({required this.rootContext, this.initialGoal});
 
   final BuildContext rootContext;
   final CapyGoal? initialGoal;
@@ -1602,7 +1624,8 @@ class _GoalSetupSheetState extends State<_GoalSetupSheet> {
   Future<void> _saveGoal() async {
     final rootContext = widget.rootContext;
     final target = double.tryParse(targetController.text.replaceAll(',', ''));
-    final saved = double.tryParse(savedController.text.replaceAll(',', '')) ?? 0;
+    final saved =
+        double.tryParse(savedController.text.replaceAll(',', '')) ?? 0;
     final name = nameController.text.trim();
 
     if (name.isEmpty || target == null || target <= 0) {
@@ -1623,11 +1646,7 @@ class _GoalSetupSheetState extends State<_GoalSetupSheet> {
         ),
       );
     } else {
-      await store.addGoal(
-        name: name,
-        targetAmount: target,
-        savedAmount: saved,
-      );
+      await store.addGoal(name: name, targetAmount: target, savedAmount: saved);
     }
 
     if (!mounted) {

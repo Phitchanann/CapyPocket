@@ -27,6 +27,86 @@ String formatMoney(double value) {
   return '$sign฿${buffer.toString()}.${parts[1]}';
 }
 
+class CapyUser {
+  const CapyUser({
+    this.id,
+    required this.username,
+    required this.passwordHash,
+    required this.displayName,
+    required this.monthlyIncome,
+    required this.cashBalance,
+    required this.pocketSaved,
+    required this.savingsGoal,
+    required this.createdAt,
+  });
+
+  final int? id;
+  final String username;
+  final String passwordHash;
+  final String displayName;
+  final double monthlyIncome;
+  final double cashBalance;
+  final double pocketSaved;
+  final double savingsGoal;
+  final DateTime createdAt;
+
+  double get netWorth => cashBalance + pocketSaved;
+
+  Map<String, Object?> toMap() {
+    return {
+      'id': id,
+      'username': username,
+      'password_hash': passwordHash,
+      'display_name': displayName,
+      'monthly_income': monthlyIncome,
+      'cash_balance': cashBalance,
+      'pocket_saved': pocketSaved,
+      'savings_goal': savingsGoal,
+      'created_at': createdAt.toIso8601String(),
+    };
+  }
+
+  factory CapyUser.fromMap(Map<String, Object?> map) {
+    return CapyUser(
+      id: map['id'] as int?,
+      username: map['username'] as String? ?? 'mint.capy',
+      passwordHash: map['password_hash'] as String? ?? '',
+      displayName: map['display_name'] as String? ?? 'Mint Capy',
+      monthlyIncome: (map['monthly_income'] as num?)?.toDouble() ?? 0,
+      cashBalance: (map['cash_balance'] as num?)?.toDouble() ?? 0,
+      pocketSaved: (map['pocket_saved'] as num?)?.toDouble() ?? 0,
+      savingsGoal: (map['savings_goal'] as num?)?.toDouble() ?? 0,
+      createdAt:
+          DateTime.tryParse(map['created_at'] as String? ?? '') ??
+          DateTime.now(),
+    );
+  }
+
+  CapyUser copyWith({
+    int? id,
+    String? username,
+    String? passwordHash,
+    String? displayName,
+    double? monthlyIncome,
+    double? cashBalance,
+    double? pocketSaved,
+    double? savingsGoal,
+    DateTime? createdAt,
+  }) {
+    return CapyUser(
+      id: id ?? this.id,
+      username: username ?? this.username,
+      passwordHash: passwordHash ?? this.passwordHash,
+      displayName: displayName ?? this.displayName,
+      monthlyIncome: monthlyIncome ?? this.monthlyIncome,
+      cashBalance: cashBalance ?? this.cashBalance,
+      pocketSaved: pocketSaved ?? this.pocketSaved,
+      savingsGoal: savingsGoal ?? this.savingsGoal,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+}
+
 String formatShortDate(DateTime value) {
   final monthNames = [
     'Jan',
@@ -105,7 +185,8 @@ class CapyTransaction {
       note: map['note'] as String? ?? '',
       amount: (map['amount'] as num?)?.toDouble() ?? 0,
       type: transactionTypeFromName(map['type'] as String? ?? 'expense'),
-      createdAt: DateTime.tryParse(map['created_at'] as String? ?? '') ??
+      createdAt:
+          DateTime.tryParse(map['created_at'] as String? ?? '') ??
           DateTime.now(),
     );
   }
@@ -227,7 +308,8 @@ class CapyGoal {
       name: map['name'] as String? ?? 'First Pocket',
       targetAmount: (map['target_amount'] as num?)?.toDouble() ?? 0,
       savedAmount: (map['saved_amount'] as num?)?.toDouble() ?? 0,
-      createdAt: DateTime.tryParse(map['created_at'] as String? ?? '') ??
+      createdAt:
+          DateTime.tryParse(map['created_at'] as String? ?? '') ??
           DateTime.now(),
     );
   }

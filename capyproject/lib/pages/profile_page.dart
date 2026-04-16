@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 
+import '../data/capy_models.dart';
 import '../state/capy_scope.dart';
 import 'ui_kit.dart';
 
 class ProfilePage extends StatelessWidget {
-  const ProfilePage({
-    super.key,
-    this.showFrame = true,
-  });
+  const ProfilePage({super.key, this.showFrame = true});
 
   final bool showFrame;
 
@@ -26,20 +24,40 @@ class ProfilePage extends StatelessWidget {
                 children: [
                   const CapyBadge(size: 82, halo: true),
                   const SizedBox(height: 12),
-                  Text('Guest mode', style: theme.textTheme.titleLarge),
+                  Text(
+                    store.currentDisplayName,
+                    style: theme.textTheme.titleLarge,
+                  ),
                   const SizedBox(height: 4),
                   Text(
-                    'Local data mode is active',
+                    store.currentUser != null
+                        ? 'Active wallet • ${store.currentUsername ?? store.currentUser!.username}'
+                        : 'Local data mode is active',
                     style: theme.textTheme.bodyMedium,
                   ),
                   const SizedBox(height: 16),
                   Row(
                     children: [
-                      Expanded(child: MiniStatCard(label: 'Pockets', value: '${store.goals.length}')),
+                      Expanded(
+                        child: MiniStatCard(
+                          label: 'Saved',
+                          value: formatMoney(store.currentPocketSaved),
+                        ),
+                      ),
                       const SizedBox(width: 12),
-                      Expanded(child: MiniStatCard(label: 'Rules', value: '${store.categories.length}')),
+                      Expanded(
+                        child: MiniStatCard(
+                          label: 'Goal',
+                          value: formatMoney(store.currentSavingsGoal),
+                        ),
+                      ),
                       const SizedBox(width: 12),
-                      Expanded(child: MiniStatCard(label: 'Moves', value: '${store.transactionCount}')),
+                      Expanded(
+                        child: MiniStatCard(
+                          label: 'Cash',
+                          value: formatMoney(store.currentCashBalance),
+                        ),
+                      ),
                     ],
                   ),
                 ],
@@ -52,7 +70,10 @@ class ProfilePage extends StatelessWidget {
             title: 'Safety net reminders',
             subtitle: 'Database is ready for budget and reminder expansion.',
             value: store.goals.isNotEmpty,
-            onChanged: (_) => showSavedMessage(context, 'Reminder setup can be extended next.'),
+            onChanged: (_) => showSavedMessage(
+              context,
+              'Reminder setup can be extended next.',
+            ),
           ),
           const SizedBox(height: 12),
           SettingToggle(
@@ -60,7 +81,10 @@ class ProfilePage extends StatelessWidget {
             title: 'Shake to quick add',
             subtitle: 'Accelerometer gesture is active across the app.',
             value: true,
-            onChanged: (_) => showSavedMessage(context, 'Shake quick add is enabled in this build.'),
+            onChanged: (_) => showSavedMessage(
+              context,
+              'Shake quick add is enabled in this build.',
+            ),
           ),
           const SizedBox(height: 12),
           SettingLine(
@@ -81,43 +105,69 @@ class ProfilePage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Project-ready feature set', style: theme.textTheme.titleMedium),
+                Text(
+                  'Project-ready feature set',
+                  style: theme.textTheme.titleMedium,
+                ),
                 const SizedBox(height: 8),
                 Text(
                   'This build now includes 9+ screens, local SQLite storage, and accelerometer-based quick add.',
                   style: theme.textTheme.bodyLarge,
                 ),
                 const SizedBox(height: 16),
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    final createAccountButton = OutlinedButton(
-                      onPressed: () => Navigator.of(context).pushNamed('/create-account'),
-                      child: const Text('Create account'),
-                    );
-                    final logoutButton = FilledButton(
-                      onPressed: () => Navigator.of(context).pushNamed('/login'),
+                if (store.isLoggedIn)
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton(
+                      onPressed: () {
+                        store.logout();
+                        if (rootTabNotifier.value != AppTab.home) {
+                          rootTabNotifier.value = AppTab.home;
+                        }
+                        Navigator.of(context).pushReplacementNamed('/root');
+                      },
                       child: const Text('Logout'),
-                    );
+                    ),
+                  )
+                else
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final createAccountButton = OutlinedButton(
+                        onPressed: () =>
+                            Navigator.of(context).pushNamed('/create-account'),
+                        child: const Text('Create account'),
+                      );
+                      final loginButton = FilledButton(
+                        onPressed: () =>
+                            Navigator.of(context).pushNamed('/login'),
+                        child: const Text('Login'),
+                      );
 
-                    if (constraints.maxWidth < 320) {
-                      return Column(
+                      if (constraints.maxWidth < 320) {
+                        return Column(
+                          children: [
+                            SizedBox(
+                              width: double.infinity,
+                              child: createAccountButton,
+                            ),
+                            const SizedBox(height: 12),
+                            SizedBox(
+                              width: double.infinity,
+                              child: loginButton,
+                            ),
+                          ],
+                        );
+                      }
+
+                      return Row(
                         children: [
-                          SizedBox(width: double.infinity, child: createAccountButton),
-                          const SizedBox(height: 12),
-                          SizedBox(width: double.infinity, child: logoutButton),
+                          Expanded(child: createAccountButton),
+                          const SizedBox(width: 12),
+                          Expanded(child: loginButton),
                         ],
                       );
-                    }
-
-                    return Row(
-                      children: [
-                        Expanded(child: createAccountButton),
-                        const SizedBox(width: 12),
-                        Expanded(child: logoutButton),
-                      ],
-                    );
-                  },
-                ),
+                    },
+                  ),
               ],
             ),
           ),

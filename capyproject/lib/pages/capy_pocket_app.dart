@@ -24,10 +24,7 @@ import '../state/capy_app_store.dart';
 import '../state/capy_scope.dart';
 
 class CapyPocketApp extends StatelessWidget {
-  const CapyPocketApp({
-    super.key,
-    required this.store,
-  });
+  const CapyPocketApp({super.key, required this.store});
 
   final CapyAppStore store;
 
@@ -39,8 +36,17 @@ class CapyPocketApp extends StatelessWidget {
         title: 'CapyPocket',
         debugShowCheckedModeBanner: false,
         theme: buildCapyTheme(),
-        home: const _RootShellPage(),
+        initialRoute: '/root',
+        onGenerateInitialRoutes: (initialRouteName) {
+          return [
+            MaterialPageRoute<void>(
+              builder: (_) => const _RootShellPage(),
+              settings: const RouteSettings(name: '/root'),
+            ),
+          ];
+        },
         routes: {
+          '/root': (_) => const _RootShellPage(),
           '/quick-add': (_) => const QuickAddPage(),
           '/add-transaction': (_) => const AddTransactionPage(),
           '/edit-transaction': (_) => const EditTransactionPage(),
@@ -74,7 +80,6 @@ class _RootShellPageState extends State<_RootShellPage> {
   @override
   void initState() {
     super.initState();
-    rootTabNotifier.value = AppTab.home;
     _shakeSubscription = accelerometerEventStream().listen(
       _handleAccelerometerEvent,
     );

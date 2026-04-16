@@ -49,6 +49,56 @@ flutter pub get
 flutter run
 ```
 
+## Backend Setup
+
+The Node.js API lives in [backend/](backend). Use these steps to prepare it:
+
+1. Import [database/CapyPocket.sql](database/CapyPocket.sql) into MySQL.
+2. Change into [backend/](backend) and copy [.env.example](backend/.env.example) to [.env](backend/.env).
+3. Update [.env](backend/.env) with your MySQL credentials and a strong `JWT_SECRET`.
+4. Install dependencies with `npm install`.
+5. Seed the sample account with `npm run seed`.
+6. Start the server with `npm start` for production or `npm run dev` for auto-reload.
+
+The seeded demo account is `test@example.com` / `123456`.
+
+## Run With MySQL
+
+1. Execute [database/CapyPocket.sql](database/CapyPocket.sql) on your MySQL server.
+2. Update [./.env.example](.env.example) with your environment values.
+3. Start Flutter normally:
+
+```bash
+flutter pub get
+flutter run
+```
+
+The app loads DB config from `.env.example` automatically. If env file loading fails, it falls back to `--dart-define` and default values.
+
+You can still run with explicit dart-define if needed:
+
+```bash
+flutter run \
+	--dart-define=CAPY_USE_MYSQL=true \
+	--dart-define=CAPY_MYSQL_HOST=127.0.0.1 \
+	--dart-define=CAPY_MYSQL_PORT=3306 \
+	--dart-define=CAPY_MYSQL_USER=root \
+	--dart-define=CAPY_MYSQL_PASSWORD=your_password \
+	--dart-define=CAPY_MYSQL_DATABASE=capypocket
+```
+
+If `CAPY_USE_MYSQL` is not set (or false), the app uses local SQLite as before.
+
+## Database Health Check
+
+The Home dashboard now shows a real-time database status chip:
+
+- Mode: `MySQL` or `SQLite`
+- Status: `online/offline`
+- Latency: round-trip milliseconds
+
+The status refreshes automatically every 8 seconds.
+
 ## Notes
 
 - This project currently uses local on-device storage, which satisfies the database requirement.

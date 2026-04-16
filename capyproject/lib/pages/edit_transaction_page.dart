@@ -76,14 +76,18 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
       return;
     }
 
-    final parsedAmount = double.tryParse(amountController.text.replaceAll(',', '').trim());
+    final parsedAmount = double.tryParse(
+      amountController.text.replaceAll(',', '').trim(),
+    );
     if (parsedAmount == null || parsedAmount <= 0 || category == null) {
       showSavedMessage(context, 'Please complete amount and category.');
       return;
     }
 
     final updated = transaction!.copyWith(
-      title: titleController.text.trim().isEmpty ? transaction!.title : titleController.text.trim(),
+      title: titleController.text.trim().isEmpty
+          ? transaction!.title
+          : titleController.text.trim(),
       category: category,
       note: noteController.text.trim(),
       amount: parsedAmount,
@@ -126,11 +130,10 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
   Widget build(BuildContext context) {
     final store = CapyScope.watch(context);
     final categories = store.categories;
-    if (categories.isEmpty) {
-      category = null;
-    } else if (!categories.any((item) => item.name == category)) {
-      category = categories.first.name;
-    }
+    final selectedCategory = categories.any((item) => item.name == category)
+        ? category
+        : (categories.isNotEmpty ? categories.first.name : null);
+    category = selectedCategory;
 
     if (transaction == null) {
       return CapyPageFrame(
@@ -158,7 +161,10 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Edit transaction', style: Theme.of(context).textTheme.titleLarge),
+              Text(
+                'Edit transaction',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
               const SizedBox(height: 6),
               Text(
                 'Update amount, category, type or note and save it back to local storage.',
@@ -167,7 +173,9 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
               const SizedBox(height: 18),
               TextField(
                 controller: amountController,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
                 decoration: const InputDecoration(
                   labelText: 'Amount',
                   prefixText: '฿ ',
@@ -184,9 +192,7 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
-                initialValue: categories.any((item) => item.name == category)
-                    ? category
-                    : null,
+                initialValue: selectedCategory,
                 items: categories
                     .map(
                       (item) => DropdownMenuItem(
@@ -248,7 +254,9 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
                   );
                   final updateButton = FilledButton(
                     onPressed: store.isSaving ? null : _updateTransaction,
-                    child: Text(store.isSaving ? 'Saving...' : 'Update transaction'),
+                    child: Text(
+                      store.isSaving ? 'Saving...' : 'Update transaction',
+                    ),
                   );
 
                   if (constraints.maxWidth < 320) {

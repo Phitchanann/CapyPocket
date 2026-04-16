@@ -50,7 +50,9 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   }
 
   Future<void> _saveTransaction() async {
-    final parsedAmount = double.tryParse(amountController.text.replaceAll(',', '').trim());
+    final parsedAmount = double.tryParse(
+      amountController.text.replaceAll(',', '').trim(),
+    );
     final trimmedTitle = titleController.text.trim();
 
     if (parsedAmount == null || parsedAmount <= 0 || category == null) {
@@ -86,11 +88,10 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
     final theme = Theme.of(context);
     final store = CapyScope.watch(context);
     final categories = store.categories;
-    if (categories.isEmpty) {
-      category = null;
-    } else if (!categories.any((item) => item.name == category)) {
-      category = categories.first.name;
-    }
+    final selectedCategory = categories.any((item) => item.name == category)
+        ? category
+        : (categories.isNotEmpty ? categories.first.name : null);
+    category = selectedCategory;
 
     return CapyPageFrame(
       currentTab: AppTab.money,
@@ -156,7 +157,9 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
             const SizedBox(height: 18),
             TextField(
               controller: amountController,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               decoration: const InputDecoration(
                 labelText: 'Amount',
                 prefixText: '฿ ',
@@ -174,9 +177,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
-              initialValue: categories.any((item) => item.name == category)
-                  ? category
-                  : null,
+              initialValue: selectedCategory,
               items: categories
                   .map(
                     (item) => DropdownMenuItem(
@@ -255,7 +256,9 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                 );
                 final saveButton = FilledButton(
                   onPressed: store.isSaving ? null : _saveTransaction,
-                  child: Text(store.isSaving ? 'Saving...' : 'Save transaction'),
+                  child: Text(
+                    store.isSaving ? 'Saving...' : 'Save transaction',
+                  ),
                 );
 
                 if (constraints.maxWidth < 320) {
