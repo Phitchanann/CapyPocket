@@ -1,8 +1,5 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 
-import '../data/capy_database.dart';
 import '../data/capy_models.dart';
 import '../state/capy_app_store.dart';
 import '../state/capy_scope.dart';
@@ -44,8 +41,6 @@ class HomeDashboardPage extends StatelessWidget {
                           : 'Shake your phone anytime to open quick add.',
                       style: theme.textTheme.bodyMedium,
                     ),
-                    const SizedBox(height: 10),
-                    const _DatabaseHealthChip(),
                   ],
                 ),
               ),
@@ -378,125 +373,6 @@ class _RecentTransactionTile extends StatelessWidget {
             ).textTheme.titleMedium?.copyWith(color: amountColor),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _DatabaseHealthChip extends StatefulWidget {
-  const _DatabaseHealthChip();
-
-  @override
-  State<_DatabaseHealthChip> createState() => _DatabaseHealthChipState();
-}
-
-class _DatabaseHealthChipState extends State<_DatabaseHealthChip> {
-  Timer? _timer;
-  CapyDatabaseHealth? _health;
-  bool _isRefreshing = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _refreshHealth();
-    _timer = Timer.periodic(const Duration(seconds: 8), (_) {
-      _refreshHealth();
-    });
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
-  }
-
-  Future<void> _refreshHealth() async {
-    if (_isRefreshing) {
-      return;
-    }
-    _isRefreshing = true;
-    final startedAt = DateTime.now();
-    try {
-      final result = await CapyDatabase.instance.checkHealth().timeout(
-        const Duration(seconds: 4),
-        onTimeout: () => CapyDatabaseHealth(
-          mode: 'DB',
-          connected: false,
-          detail: 'Database health check timed out',
-          checkedAt: DateTime.now(),
-          latencyMs: DateTime.now().difference(startedAt).inMilliseconds,
-        ),
-      );
-
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _health = result;
-      });
-    } catch (error) {
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _health = CapyDatabaseHealth(
-          mode: 'DB',
-          connected: false,
-          detail: error.toString(),
-          checkedAt: DateTime.now(),
-          latencyMs: DateTime.now().difference(startedAt).inMilliseconds,
-        );
-      });
-    } finally {
-      _isRefreshing = false;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final health = _health;
-    final connected = health?.connected ?? false;
-    final color = health == null
-        ? capyInkColor.withValues(alpha: 0.55)
-        : connected
-        ? capyPositiveColor
-        : capyNegativeColor;
-
-    final label = health == null
-        ? 'DB: checking...'
-        : 'DB: ${health.mode} ${connected ? 'online' : 'offline'} (${health.latencyMs}ms)';
-
-    return Tooltip(
-      message: health?.detail ?? 'Checking database connection',
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: color.withValues(alpha: 0.35)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              connected ? Icons.cloud_done_rounded : Icons.cloud_off_rounded,
-              size: 16,
-              color: color,
-            ),
-            const SizedBox(width: 6),
-            Flexible(
-              child: Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: color,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

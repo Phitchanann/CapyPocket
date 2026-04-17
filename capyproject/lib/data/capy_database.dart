@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:crypto/crypto.dart';
@@ -16,10 +17,11 @@ class CapyDatabase {
   static const Duration _mysqlConnectTimeout = Duration(seconds: 3);
   static const Duration _mysqlHealthTimeout = Duration(seconds: 2);
 
-  bool get _useMySql => _envBool(
+  bool get _useMySqlRequested => _envBool(
     'CAPY_USE_MYSQL',
     const String.fromEnvironment('CAPY_USE_MYSQL', defaultValue: 'false'),
   );
+  bool get _useMySql => _useMySqlRequested && !kIsWeb;
   String get _mysqlHost => _envText(
     'CAPY_MYSQL_HOST',
     const String.fromEnvironment('CAPY_MYSQL_HOST', defaultValue: '127.0.0.1'),
@@ -122,11 +124,15 @@ class CapyDatabase {
       await db.rawQuery('SELECT 1 AS health');
       final elapsed = DateTime.now().difference(startedAt).inMilliseconds;
       return CapyDatabaseHealth(
-        mode: _useMySql ? 'SQLite (fallback)' : 'SQLite',
+        mode: _useMySql
+            ? 'SQLite (fallback)'
+            : (_useMySqlRequested && kIsWeb ? 'SQLite (web)' : 'SQLite'),
         connected: true,
         detail: _useMySql
             ? 'MySQL unavailable, using local device database'
-            : 'Local device database',
+            : (_useMySqlRequested && kIsWeb
+                  ? 'MySQL direct connection is disabled on Web, using local browser database'
+                  : 'Local device database'),
         checkedAt: DateTime.now(),
         latencyMs: elapsed,
       );
