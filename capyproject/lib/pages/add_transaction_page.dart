@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../data/capy_models.dart';
 import '../state/capy_scope.dart';
+import 'camera_capture_page.dart';
 import 'ui_kit.dart';
 
 class AddTransactionPage extends StatefulWidget {
@@ -38,6 +39,15 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
     titleController.dispose();
     noteController.dispose();
     super.dispose();
+  }
+
+  Future<void> _openCamera() async {
+    final result = await Navigator.of(context).push<String>(
+      MaterialPageRoute(builder: (_) => const CameraCapturePage()),
+    );
+    if (result != null && mounted) {
+      setState(() => _slipImage = XFile(result));
+    }
   }
 
   Future<void> _pickSlip(ImageSource source) async {
@@ -259,7 +269,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                         const SizedBox(width: 10),
                         Expanded(
                           child: OutlinedButton.icon(
-                            onPressed: () => _pickSlip(ImageSource.camera),
+                            onPressed: _openCamera,
                             icon: const Icon(Icons.camera_alt_outlined, size: 18),
                             label: const Text('Retake'),
                           ),
@@ -273,7 +283,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                           child: _SlipButton(
                             icon: Icons.camera_alt_outlined,
                             label: 'Camera',
-                            onTap: () => _pickSlip(ImageSource.camera),
+                            onTap: _openCamera,
                           ),
                         ),
                         const SizedBox(width: 10),

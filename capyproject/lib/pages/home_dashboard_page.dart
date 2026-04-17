@@ -393,6 +393,7 @@ class _DatabaseHealthChip extends StatefulWidget {
 class _DatabaseHealthChipState extends State<_DatabaseHealthChip> {
   Timer? _timer;
   CapyDatabaseHealth? _health;
+  bool _isRefreshing = false;
 
   @override
   void initState() {
@@ -410,13 +411,45 @@ class _DatabaseHealthChipState extends State<_DatabaseHealthChip> {
   }
 
   Future<void> _refreshHealth() async {
-    final result = await CapyDatabase.instance.checkHealth();
-    if (!mounted) {
+    if (_isRefreshing) {
       return;
     }
-    setState(() {
-      _health = result;
-    });
+    _isRefreshing = true;
+    final startedAt = DateTime.now();
+    try {
+      final result = await CapyDatabase.instance.checkHealth().timeout(
+        const Duration(seconds: 4),
+        onTimeout: () => CapyDatabaseHealth(
+          mode: 'DB',
+          connected: false,
+          detail: 'Database health check timed out',
+          checkedAt: DateTime.now(),
+          latencyMs: DateTime.now().difference(startedAt).inMilliseconds,
+        ),
+      );
+
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _health = result;
+      });
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _health = CapyDatabaseHealth(
+          mode: 'DB',
+          connected: false,
+          detail: error.toString(),
+          checkedAt: DateTime.now(),
+          latencyMs: DateTime.now().difference(startedAt).inMilliseconds,
+        );
+      });
+    } finally {
+      _isRefreshing = false;
+    }
   }
 
   @override

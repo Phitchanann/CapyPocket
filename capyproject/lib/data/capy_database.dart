@@ -13,6 +13,8 @@ class CapyDatabase {
   CapyDatabase._();
 
   static final CapyDatabase instance = CapyDatabase._();
+  static const Duration _mysqlConnectTimeout = Duration(seconds: 3);
+  static const Duration _mysqlHealthTimeout = Duration(seconds: 2);
 
   bool get _useMySql => _envBool(
     'CAPY_USE_MYSQL',
@@ -40,6 +42,10 @@ class CapyDatabase {
       'CAPY_MYSQL_DATABASE',
       defaultValue: 'capypocket',
     ),
+  );
+  bool get _mysqlSecure => _envBool(
+    'CAPY_MYSQL_SECURE',
+    const String.fromEnvironment('CAPY_MYSQL_SECURE', defaultValue: 'true'),
   );
 
   Database? _database;
@@ -79,9 +85,9 @@ class CapyDatabase {
         userName: _mysqlUser,
         password: _mysqlPassword,
         databaseName: _mysqlDatabase,
-        secure: false,
+        secure: _mysqlSecure,
       );
-      await connection.connect();
+      await connection.connect().timeout(_mysqlConnectTimeout);
       await _ensureMySqlSchema(connection);
       await _seedDefaultUsersMySql(connection);
       await _seedDefaultCategoriesMySql(connection);
@@ -97,16 +103,19 @@ class CapyDatabase {
     final startedAt = DateTime.now();
     try {
       if (_activeMySql) {
-        final connection = await mysql;
-        await connection.execute('SELECT 1 AS health');
-        final elapsed = DateTime.now().difference(startedAt).inMilliseconds;
-        return CapyDatabaseHealth(
-          mode: 'MySQL',
-          connected: true,
-          detail: '$_mysqlUser@$_mysqlHost:$_mysqlPort/$_mysqlDatabase',
-          checkedAt: DateTime.now(),
-          latencyMs: elapsed,
-        );
+        try {
+          await _probeMySqlHealth();
+          final elapsed = DateTime.now().difference(startedAt).inMilliseconds;
+          return CapyDatabaseHealth(
+            mode: 'MySQL',
+            connected: true,
+            detail: '$_mysqlUser@$_mysqlHost:$_mysqlPort/$_mysqlDatabase',
+            checkedAt: DateTime.now(),
+            latencyMs: elapsed,
+          );
+        } catch (_) {
+          _mysqlUnavailable = true;
+        }
       }
 
       final db = await database;
@@ -130,6 +139,29 @@ class CapyDatabase {
         checkedAt: DateTime.now(),
         latencyMs: elapsed,
       );
+    }
+  }
+
+  Future<void> _probeMySqlHealth() async {
+    if (_mysql != null) {
+      await _mysql!.execute('SELECT 1 AS health').timeout(_mysqlHealthTimeout);
+      return;
+    }
+
+    final probe = await MySQLConnection.createConnection(
+      host: _mysqlHost,
+      port: _mysqlPort,
+      userName: _mysqlUser,
+      password: _mysqlPassword,
+      databaseName: _mysqlDatabase,
+      secure: _mysqlSecure,
+    );
+
+    try {
+      await probe.connect().timeout(_mysqlConnectTimeout);
+      await probe.execute('SELECT 1 AS health').timeout(_mysqlHealthTimeout);
+    } finally {
+      await probe.close();
     }
   }
 
@@ -755,7 +787,7 @@ class CapyDatabase {
       try {
         final connection = await mysql;
         final result = await connection.execute(
-          'SELECT id, title, category, note, amount, type, created_at '
+          'SELECT id, title, category, note, amount, type, receipt_image_url, created_at '
           'FROM transactions '
           'WHERE user_id = :userId AND deleted_at IS NULL '
           'ORDER BY created_at DESC',
@@ -822,7 +854,7 @@ class CapyDatabase {
         final connection = await mysql;
         await connection.execute(
           'UPDATE transactions '
-          'SET title = :title, category = :category, note = :note, amount = :amount, type = :type, created_at = :createdAt '
+          'SET title = :title, category = :category, note = :note, amount = :amount, type = :type, created_at = :createdAt, receipt_image_url = :receiptImageUrl '
           'WHERE id = :id AND user_id = :userId',
           {
             'id': transaction.id,
@@ -833,6 +865,7 @@ class CapyDatabase {
             'amount': transaction.amount,
             'type': transaction.type.name,
             'createdAt': _formatDateTimeForSql(transaction.createdAt),
+            'receiptImageUrl': transaction.receiptImageUrl,
           },
         );
         return;
@@ -1037,6 +1070,7 @@ class CapyDatabase {
       amount: double.tryParse(map['amount'] ?? '0') ?? 0,
       type: transactionTypeFromName(map['type'] ?? 'expense'),
       createdAt: DateTime.tryParse(map['created_at'] ?? '') ?? DateTime.now(),
+      receiptImageUrl: map['receipt_image_url'],
     );
   }
 

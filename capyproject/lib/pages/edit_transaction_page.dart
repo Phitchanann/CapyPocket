@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 
 import '../data/capy_models.dart';
@@ -126,6 +128,73 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
     Navigator.of(context).pop();
   }
 
+  Widget _buildReceiptViewer({required String imageUrl}) {
+    final theme = Theme.of(context);
+    final isRemote = imageUrl.startsWith('http');
+    final file = isRemote ? null : File(imageUrl);
+    final fileExists = file != null && file.existsSync();
+
+    return WarmCard(
+      color: const Color(0xFFF5E7D2),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.receipt_long_rounded, size: 18),
+              const SizedBox(width: 8),
+              Text('Attached receipt', style: theme.textTheme.titleMedium),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (isRemote)
+            ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Image.network(
+                imageUrl,
+                width: double.infinity,
+                height: 220,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => _receiptError(theme),
+              ),
+            )
+          else if (fileExists)
+            ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Image.file(
+                file,
+                width: double.infinity,
+                height: 220,
+                fit: BoxFit.cover,
+              ),
+            )
+          else
+            _receiptError(theme),
+        ],
+      ),
+    );
+  }
+
+  Widget _receiptError(ThemeData theme) {
+    return Container(
+      width: double.infinity,
+      height: 80,
+      decoration: BoxDecoration(
+        color: capySurfaceColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: capyLineColor),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.broken_image_outlined, size: 28),
+          const SizedBox(height: 6),
+          Text('Receipt image unavailable', style: theme.textTheme.bodyMedium),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final store = CapyScope.watch(context);
@@ -245,6 +314,10 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
                 ),
                 maxLines: 3,
               ),
+              if (transaction?.receiptImageUrl != null) ...[
+                const SizedBox(height: 16),
+                _buildReceiptViewer(imageUrl: transaction!.receiptImageUrl!),
+              ],
               const SizedBox(height: 18),
               LayoutBuilder(
                 builder: (context, constraints) {
