@@ -5,10 +5,7 @@ import '../state/capy_scope.dart';
 import 'ui_kit.dart';
 
 class MoneyPage extends StatelessWidget {
-  const MoneyPage({
-    super.key,
-    this.showFrame = true,
-  });
+  const MoneyPage({super.key, this.showFrame = true});
 
   final bool showFrame;
 
@@ -47,7 +44,10 @@ class MoneyPage extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 14),
-                Text(formatMoney(store.availableBalance), style: theme.textTheme.headlineMedium),
+                Text(
+                  formatMoney(store.availableBalance),
+                  style: theme.textTheme.headlineMedium,
+                ),
                 const SizedBox(height: 6),
                 Text(
                   'Pocket saved ${formatMoney(store.totalPocketSaved)}',
@@ -92,6 +92,7 @@ class MoneyPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 18),
                 SizedBox(
+                  width: double.infinity,
                   height: 150,
                   child: CustomPaint(
                     painter: TrendPainter(points: store.weeklyExpensePoints),
@@ -104,15 +105,20 @@ class MoneyPage extends StatelessWidget {
           Row(
             children: [
               const Expanded(
-                child: SectionHeading(title: 'Transactions', trailing: 'Tap to edit'),
+                child: SectionHeading(
+                  title: 'Transactions',
+                  trailing: 'Tap to edit',
+                ),
               ),
               IconButton(
-                onPressed: () => Navigator.of(context).pushNamed('/monthly-snapshot'),
+                onPressed: () =>
+                    Navigator.of(context).pushNamed('/monthly-snapshot'),
                 icon: const Icon(Icons.calendar_month_rounded),
                 tooltip: 'Monthly snapshot',
               ),
               IconButton(
-                onPressed: () => Navigator.of(context).pushNamed('/insight-analysis'),
+                onPressed: () =>
+                    Navigator.of(context).pushNamed('/insight-analysis'),
                 icon: const Icon(Icons.insights_rounded),
                 tooltip: 'Insights',
               ),
@@ -156,7 +162,9 @@ class _MoneyTransactionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final amountColor = transaction.isPositive ? capyPositiveColor : capyNegativeColor;
+    final amountColor = transaction.isPositive
+        ? capyPositiveColor
+        : capyNegativeColor;
     final icon = switch (transaction.type) {
       CapyTransactionType.income => Icons.arrow_downward_rounded,
       CapyTransactionType.pocket => Icons.savings_rounded,
@@ -165,10 +173,9 @@ class _MoneyTransactionTile extends StatelessWidget {
 
     return InkWell(
       borderRadius: BorderRadius.circular(28),
-      onTap: () => Navigator.of(context).pushNamed(
-        '/edit-transaction',
-        arguments: transaction,
-      ),
+      onTap: () => Navigator.of(
+        context,
+      ).pushNamed('/edit-transaction', arguments: transaction),
       child: WarmCard(
         child: Row(
           children: [
@@ -186,7 +193,10 @@ class _MoneyTransactionTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(transaction.title, style: Theme.of(context).textTheme.titleMedium),
+                  Text(
+                    transaction.title,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
                   const SizedBox(height: 4),
                   Text(
                     '${transaction.category} • ${formatShortDate(transaction.createdAt)} • ${formatTimeLabel(transaction.createdAt)}',
@@ -201,12 +211,15 @@ class _MoneyTransactionTile extends StatelessWidget {
               children: [
                 Text(
                   transaction.signedAmountLabel,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: amountColor,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleMedium?.copyWith(color: amountColor),
                 ),
                 const SizedBox(height: 4),
-                Text(transaction.typeLabel, style: Theme.of(context).textTheme.labelMedium),
+                Text(
+                  transaction.typeLabel,
+                  style: Theme.of(context).textTheme.labelMedium,
+                ),
               ],
             ),
           ],

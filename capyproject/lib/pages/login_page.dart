@@ -19,6 +19,16 @@ class _LoginPageState extends State<LoginPage> {
   bool _isSubmitting = false;
   String? _errorMessage;
 
+  void _goBack() {
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      navigator.pop();
+      return;
+    }
+
+    navigator.pushReplacementNamed('/root');
+  }
+
   @override
   void initState() {
     super.initState();
@@ -114,10 +124,9 @@ class _LoginPageState extends State<LoginPage> {
           final users = snapshot.data ?? const <CapyUser>[];
           final hasAccounts = users.isNotEmpty;
 
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(20, 24, 20, 40),
-              child: WarmCard(
+          Widget buildContentBlock() {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return WarmCard(
                 child: Column(
                   children: [
                     const Center(child: CapyBadge(size: 66, halo: true)),
@@ -130,14 +139,12 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ],
                 ),
-              ),
-            );
-          }
+              );
+            }
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 24, 20, 40),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 if (!hasAccounts)
                   EmptyStateCard(
@@ -146,9 +153,7 @@ class _LoginPageState extends State<LoginPage> {
                         'Create one first, then log in with username and password.',
                     actionLabel: 'Create account',
                     onPressed: () {
-                      Navigator.of(
-                        context,
-                      ).pushReplacementNamed('/create-account');
+                      Navigator.of(context).pushNamed('/create-account');
                     },
                   )
                 else
@@ -229,9 +234,7 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                       TextButton(
                         onPressed: () {
-                          Navigator.of(
-                            context,
-                          ).pushReplacementNamed('/create-account');
+                          Navigator.of(context).pushNamed('/create-account');
                         },
                         child: Text(
                           'Create account instead?',
@@ -242,7 +245,48 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 ),
               ],
-            ),
+            );
+          }
+
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(20, 24, 20, 40),
+                child: SizedBox(
+                  height: constraints.maxHeight - 64,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      TextButton.icon(
+                        onPressed: _goBack,
+                        icon: const Icon(
+                          Icons.arrow_back_ios_new_rounded,
+                          size: 16,
+                        ),
+                        label: Text('Back', style: theme.textTheme.bodyMedium),
+                        style: TextButton.styleFrom(
+                          foregroundColor: capyInkColor,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 4,
+                            vertical: 8,
+                          ),
+                          visualDensity: VisualDensity.compact,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                      ),
+                      Expanded(
+                        child: Center(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 560),
+                            child: buildContentBlock(),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
           );
         },
       ),

@@ -18,6 +18,16 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
   bool _isSubmitting = false;
   String? _errorMessage;
 
+  void _goBackToLogin() {
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      navigator.pop();
+      return;
+    }
+
+    navigator.pushReplacementNamed('/login');
+  }
+
   @override
   void dispose() {
     _displayNameController.dispose();
@@ -88,6 +98,18 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            TextButton.icon(
+              onPressed: _goBackToLogin,
+              icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 16),
+              label: Text('Back to login', style: theme.textTheme.bodyMedium),
+              style: TextButton.styleFrom(
+                foregroundColor: capyInkColor,
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                visualDensity: VisualDensity.compact,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+            ),
+            const SizedBox(height: 12),
             WarmCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -166,9 +188,7 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                     ),
                   ),
                   TextButton(
-                    onPressed: () {
-                      Navigator.of(context).pushReplacementNamed('/login');
-                    },
+                    onPressed: _goBackToLogin,
                     child: Text(
                       'Already have an account? Login',
                       style: theme.textTheme.bodyMedium,

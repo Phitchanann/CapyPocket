@@ -142,6 +142,7 @@ class CapyTransaction {
     required this.amount,
     required this.type,
     required this.createdAt,
+    this.receiptImageUrl,
   });
 
   final int? id;
@@ -151,6 +152,7 @@ class CapyTransaction {
   final double amount;
   final CapyTransactionType type;
   final DateTime createdAt;
+  final String? receiptImageUrl;
 
   bool get isPositive => type != CapyTransactionType.expense;
 
@@ -174,6 +176,7 @@ class CapyTransaction {
       'amount': amount,
       'type': type.name,
       'created_at': createdAt.toIso8601String(),
+      'receipt_image_url': receiptImageUrl,
     };
   }
 
@@ -188,6 +191,7 @@ class CapyTransaction {
       createdAt:
           DateTime.tryParse(map['created_at'] as String? ?? '') ??
           DateTime.now(),
+      receiptImageUrl: map['receipt_image_url'] as String?,
     );
   }
 
@@ -199,6 +203,7 @@ class CapyTransaction {
     double? amount,
     CapyTransactionType? type,
     DateTime? createdAt,
+    Object? receiptImageUrl = _unset,
   }) {
     return CapyTransaction(
       id: id ?? this.id,
@@ -208,9 +213,14 @@ class CapyTransaction {
       amount: amount ?? this.amount,
       type: type ?? this.type,
       createdAt: createdAt ?? this.createdAt,
+      receiptImageUrl: receiptImageUrl == _unset
+          ? this.receiptImageUrl
+          : receiptImageUrl as String?,
     );
   }
 }
+
+const Object _unset = Object();
 
 class CapyCategory {
   const CapyCategory({

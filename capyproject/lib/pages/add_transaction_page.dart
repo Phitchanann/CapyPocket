@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../data/capy_models.dart';
 import '../state/capy_scope.dart';
@@ -19,6 +22,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   CapyTransactionType type = CapyTransactionType.expense;
   String? category;
   DateTime selectedDate = DateTime.now();
+  XFile? _slipImage;
 
   @override
   void initState() {
@@ -34,6 +38,18 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
     titleController.dispose();
     noteController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickSlip(ImageSource source) async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(
+      source: source,
+      imageQuality: 85,
+      maxWidth: 1920,
+    );
+    if (picked != null) {
+      setState(() => _slipImage = picked);
+    }
   }
 
   Future<void> _pickDate() async {
@@ -68,6 +84,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
       amount: parsedAmount,
       type: type,
       createdAt: selectedDate,
+      receiptImageUrl: _slipImage?.path,
     );
 
     if (!mounted) {
@@ -217,22 +234,58 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Advanced feature', style: theme.textTheme.titleMedium),
+                  Text('Slip / Receipt', style: theme.textTheme.titleMedium),
                   const SizedBox(height: 12),
-                  Container(
-                    height: 96,
-                    decoration: BoxDecoration(
-                      color: capySurfaceColor.withValues(alpha: 0.82),
-                      borderRadius: BorderRadius.circular(22),
-                      border: Border.all(color: capyLineColor),
-                    ),
-                    child: const Center(
-                      child: Text(
-                        'Shake the phone anywhere in the app to open quick add.',
-                        textAlign: TextAlign.center,
+                  if (_slipImage != null) ...[
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: Image.file(
+                        File(_slipImage!.path),
+                        width: double.infinity,
+                        height: 200,
+                        fit: BoxFit.cover,
                       ),
                     ),
-                  ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () => setState(() => _slipImage = null),
+                            icon: const Icon(Icons.delete_outline, size: 18),
+                            label: const Text('Remove'),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () => _pickSlip(ImageSource.camera),
+                            icon: const Icon(Icons.camera_alt_outlined, size: 18),
+                            label: const Text('Retake'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ] else
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _SlipButton(
+                            icon: Icons.camera_alt_outlined,
+                            label: 'Camera',
+                            onTap: () => _pickSlip(ImageSource.camera),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _SlipButton(
+                            icon: Icons.photo_library_outlined,
+                            label: 'Gallery',
+                            onTap: () => _pickSlip(ImageSource.gallery),
+                          ),
+                        ),
+                      ],
+                    ),
                 ],
               ),
             ),
@@ -280,6 +333,41 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                 );
               },
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SlipButton extends StatelessWidget {
+  const _SlipButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 80,
+        decoration: BoxDecoration(
+          color: capySurfaceColor.withValues(alpha: 0.82),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: capyLineColor),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 28, color: capyInkColor),
+            const SizedBox(height: 6),
+            Text(label, style: const TextStyle(fontSize: 13)),
           ],
         ),
       ),

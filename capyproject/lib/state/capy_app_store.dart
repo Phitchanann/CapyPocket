@@ -145,6 +145,7 @@ class CapyAppStore extends ChangeNotifier {
     required double amount,
     required CapyTransactionType type,
     DateTime? createdAt,
+    String? receiptImageUrl,
   }) async {
     await _performWrite(() async {
       final saved = await _database.insertTransaction(
@@ -155,6 +156,7 @@ class CapyAppStore extends ChangeNotifier {
           amount: amount,
           type: type,
           createdAt: createdAt ?? DateTime.now(),
+          receiptImageUrl: receiptImageUrl,
         ),
       );
       _transactions = [saved, ..._transactions];

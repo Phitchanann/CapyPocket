@@ -139,7 +139,7 @@ class CapyDatabase {
 
     return openDatabase(
       fullPath,
-      version: 3,
+      version: 4,
       onCreate: (db, version) async {
         await _ensureSchema(db);
         await _seedDefaultUsers(db);
@@ -158,6 +158,9 @@ class CapyDatabase {
         if (oldVersion < 3) {
           await _upgradeToLoginSchema(db);
           await _seedDefaultUsers(db);
+        }
+        if (oldVersion < 4) {
+          await _upgradeToReceiptSchema(db);
         }
       },
     );
@@ -189,6 +192,7 @@ class CapyDatabase {
         type TEXT NOT NULL,
         created_at TEXT NOT NULL,
         deleted_at TEXT NULL,
+        receipt_image_url TEXT NULL,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       )
     ''');
@@ -309,6 +313,15 @@ class CapyDatabase {
       {'password_hash': _hashPassword('capy123')},
       where: 'username = ? AND (password_hash = "" OR password_hash IS NULL)',
       whereArgs: ['mint.capy'],
+    );
+  }
+
+  Future<void> _upgradeToReceiptSchema(Database db) async {
+    await _addColumnIfMissing(
+      db,
+      tableName: 'transactions',
+      columnName: 'receipt_image_url',
+      columnDefinition: 'TEXT NULL',
     );
   }
 
@@ -771,8 +784,8 @@ class CapyDatabase {
       try {
         final connection = await mysql;
         await connection.execute(
-          'INSERT INTO transactions (user_id, title, category, note, amount, type, created_at) '
-          'VALUES (:userId, :title, :category, :note, :amount, :type, :createdAt)',
+          'INSERT INTO transactions (user_id, title, category, note, amount, type, created_at, receipt_image_url) '
+          'VALUES (:userId, :title, :category, :note, :amount, :type, :createdAt, :receiptImageUrl)',
           {
             'userId': _activeUserId,
             'title': transaction.title,
@@ -781,6 +794,7 @@ class CapyDatabase {
             'amount': transaction.amount,
             'type': transaction.type.name,
             'createdAt': _formatDateTimeForSql(transaction.createdAt),
+            'receiptImageUrl': transaction.receiptImageUrl,
           },
         );
 

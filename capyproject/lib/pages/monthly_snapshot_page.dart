@@ -24,7 +24,9 @@ class MonthlySnapshotPage extends StatelessWidget {
           children: [
             SectionHeading(
               title: 'Month ${DateTime.now().month}',
-              trailing: store.transactionCount == 0 ? 'No activity' : '${store.transactionCount} moves',
+              trailing: store.transactionCount == 0
+                  ? 'No activity'
+                  : '${store.transactionCount} moves',
             ),
             const SizedBox(height: 12),
             Row(
@@ -32,21 +34,27 @@ class MonthlySnapshotPage extends StatelessWidget {
                 Expanded(
                   child: MiniStatCard(
                     label: topThree.isNotEmpty ? topThree[0].key : 'Bills',
-                    value: topThree.isNotEmpty ? formatMoney(topThree[0].value) : '฿0.00',
+                    value: topThree.isNotEmpty
+                        ? formatMoney(topThree[0].value)
+                        : '฿0.00',
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: MiniStatCard(
                     label: topThree.length > 1 ? topThree[1].key : 'Savings',
-                    value: topThree.length > 1 ? formatMoney(topThree[1].value) : '฿0.00',
+                    value: topThree.length > 1
+                        ? formatMoney(topThree[1].value)
+                        : '฿0.00',
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: MiniStatCard(
                     label: topThree.length > 2 ? topThree[2].key : 'Fun',
-                    value: topThree.length > 2 ? formatMoney(topThree[2].value) : '฿0.00',
+                    value: topThree.length > 2
+                        ? formatMoney(topThree[2].value)
+                        : '฿0.00',
                   ),
                 ),
               ],
@@ -58,13 +66,17 @@ class MonthlySnapshotPage extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Text('Spending breakdown', style: theme.textTheme.titleMedium),
+                      Text(
+                        'Spending breakdown',
+                        style: theme.textTheme.titleMedium,
+                      ),
                       const Spacer(),
                       Text('Expense only', style: theme.textTheme.labelMedium),
                     ],
                   ),
                   const SizedBox(height: 18),
                   SizedBox(
+                    width: double.infinity,
                     height: 150,
                     child: CustomPaint(
                       painter: TrendPainter(points: store.weeklyExpensePoints),
@@ -74,7 +86,10 @@ class MonthlySnapshotPage extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 24),
-            SectionHeading(title: 'Top categories', trailing: '${breakdown.length} items'),
+            SectionHeading(
+              title: 'Top categories',
+              trailing: '${breakdown.length} items',
+            ),
             const SizedBox(height: 12),
             if (breakdown.isEmpty)
               EmptyStateCard(
@@ -82,7 +97,8 @@ class MonthlySnapshotPage extends StatelessWidget {
                 subtitle:
                     'Once your first transactions arrive, this page will summarize spending by category.',
                 actionLabel: 'Add first transaction',
-                onPressed: () => Navigator.of(context).pushNamed('/add-transaction'),
+                onPressed: () =>
+                    Navigator.of(context).pushNamed('/add-transaction'),
                 icon: Icons.insert_chart_outlined_rounded,
               )
             else
@@ -93,9 +109,15 @@ class MonthlySnapshotPage extends StatelessWidget {
                       child: Row(
                         children: [
                           Expanded(
-                            child: Text(item.key, style: theme.textTheme.titleMedium),
+                            child: Text(
+                              item.key,
+                              style: theme.textTheme.titleMedium,
+                            ),
                           ),
-                          Text(formatMoney(item.value), style: theme.textTheme.titleMedium),
+                          Text(
+                            formatMoney(item.value),
+                            style: theme.textTheme.titleMedium,
+                          ),
                         ],
                       ),
                     ),

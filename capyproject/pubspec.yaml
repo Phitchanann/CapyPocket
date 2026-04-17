@@ -39,8 +39,10 @@ dependencies:
   sensors_plus: ^6.1.1
   sqflite: ^2.4.1
   sqflite_common_ffi: ^2.3.4+4
+  sqflite_common_ffi_web: ^0.4.5
   mysql_client: ^0.0.27
   flutter_dotenv: ^5.2.1
+  image_picker: ^1.1.2
 
 dev_dependencies:
   flutter_test:
