@@ -27,6 +27,21 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   XFile? _slipImage;
   Uint8List? _slipBytes;
   bool _uploadingReceipt = false;
+  bool _seededFromRoute = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_seededFromRoute) {
+      return;
+    }
+
+    final args = ModalRoute.of(context)?.settings.arguments;
+    if (args is CapyTransactionType) {
+      type = args;
+    }
+    _seededFromRoute = true;
+  }
 
   // ─── Numpad logic ─────────────────────────────────────────────────────────
 
@@ -70,6 +85,20 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
     return val == val.truncateToDouble()
         ? val.toStringAsFixed(2)
         : val.toStringAsFixed(2);
+  }
+
+  // ─── Date picker ──────────────────────────────────────────────────────────
+
+  Future<void> _pickDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: selectedDate,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+    );
+    if (picked != null) {
+      setState(() => selectedDate = picked);
+    }
   }
 
   // ─── Receipt pick ──────────────────────────────────────────────────────────
@@ -179,6 +208,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
     return CapyPageFrame(
       currentTab: AppTab.money,
       showFab: false,
+      showBottomBar: false,
       child: Column(
         children: [
           // ── Top scrollable area ──
@@ -297,6 +327,62 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                     const SizedBox(height: 16),
                   ],
 
+                  // Date picker
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'Date',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: capyInkColor,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  GestureDetector(
+                    onTap: _pickDate,
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: capySurfaceColor,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: capyLineColor),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.calendar_today_rounded,
+                                size: 18,
+                                color: capyMutedColor,
+                              ),
+                              const SizedBox(width: 10),
+                              Text(
+                                selectedDate.toString().split(' ')[0],
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: capyInkColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const Icon(
+                            Icons.arrow_forward_ios_rounded,
+                            size: 14,
+                            color: capyMutedColor,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
                   // Receipt upload zone
                   _ReceiptZone(
                     slipImage: _slipImage,
@@ -397,8 +483,7 @@ class _CatChip extends StatelessWidget {
               cat.name,
               style: TextStyle(
                 fontSize: 13,
-                fontWeight:
-                    selected ? FontWeight.w700 : FontWeight.w500,
+                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                 color: selected ? color : capyInkColor,
               ),
             ),
@@ -514,10 +599,7 @@ class _ReceiptZone extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 4),
-            Text(
-              'Supports JPG, PNG or PDF',
-              style: theme.textTheme.bodyMedium,
-            ),
+            Text('Supports JPG, PNG or PDF', style: theme.textTheme.bodyMedium),
             const SizedBox(height: 12),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -604,27 +686,25 @@ class DashedBorderBox extends StatelessWidget {
 class _DashedRectPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final paint =
-        Paint()
-          ..color = capyLineColor
-          ..strokeWidth = 1.5
-          ..style = PaintingStyle.stroke;
+    final paint = Paint()
+      ..color = capyLineColor
+      ..strokeWidth = 1.5
+      ..style = PaintingStyle.stroke;
     const dash = 6.0;
     const gap = 4.0;
     const r = 16.0;
     final path = Path()
-      ..addRRect(RRect.fromRectAndRadius(
-        Rect.fromLTWH(0, 0, size.width, size.height),
-        const Radius.circular(r),
-      ));
+      ..addRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(0, 0, size.width, size.height),
+          const Radius.circular(r),
+        ),
+      );
     final metrics = path.computeMetrics();
     for (final metric in metrics) {
       double distance = 0;
       while (distance < metric.length) {
-        canvas.drawPath(
-          metric.extractPath(distance, distance + dash),
-          paint,
-        );
+        canvas.drawPath(metric.extractPath(distance, distance + dash), paint);
         distance += dash + gap;
       }
     }
@@ -672,10 +752,7 @@ class _NumpadSection extends StatelessWidget {
                 children: [
                   for (int i = 0; i < row.length; i++) ...[
                     Expanded(
-                      child: _NumKey(
-                        label: row[i],
-                        onTap: () => onKey(row[i]),
-                      ),
+                      child: _NumKey(label: row[i], onTap: () => onKey(row[i])),
                     ),
                     if (i < row.length - 1) const SizedBox(width: 6),
                   ],

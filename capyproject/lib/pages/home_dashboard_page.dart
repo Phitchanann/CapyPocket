@@ -65,7 +65,7 @@ class HomeDashboardPage extends StatelessWidget {
                         switch (action.title) {
                           case 'Receive':
                             Navigator.of(context).pushNamed(
-                              '/quick-add',
+                              '/add-transaction',
                               arguments: CapyTransactionType.income,
                             );
                             return;
@@ -74,7 +74,7 @@ class HomeDashboardPage extends StatelessWidget {
                             return;
                           case 'Save':
                             Navigator.of(context).pushNamed(
-                              '/quick-add',
+                              '/add-transaction',
                               arguments: CapyTransactionType.pocket,
                             );
                             return;
