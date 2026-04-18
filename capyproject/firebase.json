@@ -1,0 +1,32 @@
+{
+	"firestore": {
+		"rules": "firestore.rules",
+		"indexes": "firestore.indexes.json"
+	},
+	"storage": {
+		"rules": "storage.rules"
+	},
+	"flutter": {
+		"platforms": {
+			"android": {
+				"default": {
+					"projectId": "capypocket",
+					"appId": "1:1040386855221:android:3788daa228a0a162e93c7c",
+					"fileOutput": "android/app/google-services.json"
+				}
+			},
+			"dart": {
+				"lib/firebase_options.dart": {
+					"projectId": "capypocket",
+					"configurations": {
+						"android": "1:1040386855221:android:3788daa228a0a162e93c7c",
+						"ios": "1:1040386855221:ios:c4c2ce6998906b9be93c7c",
+						"macos": "1:1040386855221:ios:c4c2ce6998906b9be93c7c",
+						"web": "1:1040386855221:web:babddc693f60e801e93c7c",
+						"windows": "1:1040386855221:web:5a7a3cf27f75d358e93c7c"
+					}
+				}
+			}
+		}
+	}
+}

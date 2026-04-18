@@ -1,19 +1,18 @@
 import 'package:flutter/foundation.dart';
 
-import '../data/capy_database.dart';
 import '../data/capy_models.dart';
+import '../services/firebase_service.dart';
 
 class CapyAppStore extends ChangeNotifier {
-  CapyAppStore({CapyDatabase? database})
-    : _database = database ?? CapyDatabase.instance;
+  CapyAppStore({FirebaseService? service})
+    : _service = service ?? FirebaseService.instance;
 
-  final CapyDatabase _database;
+  final FirebaseService _service;
 
   bool _isReady = false;
   bool _isSaving = false;
   String? _errorMessage;
   bool _isLoggedIn = false;
-  String? _currentUsername;
   CapyUser? _currentUser;
 
   List<CapyTransaction> _transactions = const [];
@@ -24,22 +23,32 @@ class CapyAppStore extends ChangeNotifier {
   bool get isSaving => _isSaving;
   String? get errorMessage => _errorMessage;
   bool get isLoggedIn => _isLoggedIn;
-  String? get currentUsername => _currentUsername;
+  String? get currentUsername => _currentUser?.email;
   CapyUser? get currentUser => _currentUser;
   String get currentDisplayName =>
-      _currentUser?.displayName ?? _currentUsername ?? 'User';
-  double get currentPocketSaved =>
-      _currentUser?.pocketSaved ?? totalPocketSaved;
-  double get currentCashBalance =>
-      _currentUser?.cashBalance ?? availableBalance;
+      _currentUser?.displayName.isNotEmpty == true
+          ? _currentUser!.displayName
+          : _currentUser?.email ?? 'User';
+  double get currentPocketSaved => totalPocketSaved;
+  double get currentCashBalance => availableBalance;
   double get currentSavingsGoal => _currentUser?.savingsGoal ?? 0;
+  double get currentMonthlyIncome => _currentUser?.monthlyIncome ?? 0;
 
   List<CapyTransaction> get transactions => List.unmodifiable(_transactions);
   List<CapyCategory> get categories => List.unmodifiable(_categories);
   List<CapyGoal> get goals => List.unmodifiable(_goals);
 
   Future<void> initialize() async {
-    await refresh();
+    try {
+      final user = await _service.currentUser();
+      if (user != null) {
+        _currentUser = user;
+        _isLoggedIn = true;
+        await _refreshData();
+      }
+    } catch (error) {
+      _errorMessage = error.toString();
+    }
     _isReady = true;
     notifyListeners();
   }
@@ -47,16 +56,26 @@ class CapyAppStore extends ChangeNotifier {
   Future<void> refresh() async {
     try {
       _errorMessage = null;
-      _currentUser = await _database.currentUser();
-      _categories = await _database.fetchCategories();
-      _transactions = await _database.fetchTransactions();
-      _goals = await _database.fetchGoals();
-      _sortTransactions();
-      _sortGoals();
+      if (_isLoggedIn) {
+        _currentUser = await _service.currentUser();
+        if (_currentUser != null) {
+          await _refreshData();
+        }
+      }
     } catch (error) {
       _errorMessage = error.toString();
     }
     notifyListeners();
+  }
+
+  Future<void> _refreshData() async {
+    final uid = _currentUser?.id;
+    if (uid == null) return;
+    _categories = await _service.fetchCategories(uid);
+    _transactions = await _service.fetchTransactions(uid);
+    _goals = await _service.fetchGoals(uid);
+    _sortTransactions();
+    _sortGoals();
   }
 
   double get totalIncome => _transactions
@@ -85,11 +104,8 @@ class CapyAppStore extends ChangeNotifier {
   List<double> get weeklyExpensePoints {
     final now = DateTime.now();
     return List<double>.generate(7, (index) {
-      final day = DateTime(
-        now.year,
-        now.month,
-        now.day,
-      ).subtract(Duration(days: 6 - index));
+      final day = DateTime(now.year, now.month, now.day)
+          .subtract(Duration(days: 6 - index));
       return _transactions
           .where(
             (item) =>
@@ -116,25 +132,27 @@ class CapyAppStore extends ChangeNotifier {
     return result;
   }
 
-  void login(String username) {
-    _isLoggedIn = true;
-    _currentUsername = username;
-    notifyListeners();
-  }
-
   void loginUser(CapyUser user) {
     _isLoggedIn = true;
-    _currentUsername = user.username;
     _currentUser = user;
-    _database.setActiveUserId(user.id);
+    _errorMessage = null;
     notifyListeners();
+    _refreshData().then((_) {
+      notifyListeners();
+    }).catchError((Object error) {
+      _errorMessage = error.toString();
+      notifyListeners();
+    });
   }
 
   void logout() {
     _isLoggedIn = false;
-    _currentUsername = null;
     _currentUser = null;
-    _database.setActiveUserId(null);
+    _transactions = const [];
+    _categories = const [];
+    _goals = const [];
+    _errorMessage = null;
+    _service.signOut().catchError((_) {});
     notifyListeners();
   }
 
@@ -147,8 +165,11 @@ class CapyAppStore extends ChangeNotifier {
     DateTime? createdAt,
     String? receiptImageUrl,
   }) async {
+    final uid = _currentUser?.id;
+    if (uid == null) return;
     await _performWrite(() async {
-      final saved = await _database.insertTransaction(
+      final saved = await _service.insertTransaction(
+        uid,
         CapyTransaction(
           title: title,
           category: category,
@@ -165,8 +186,10 @@ class CapyAppStore extends ChangeNotifier {
   }
 
   Future<void> updateTransaction(CapyTransaction transaction) async {
+    final uid = _currentUser?.id;
+    if (uid == null) return;
     await _performWrite(() async {
-      await _database.updateTransaction(transaction);
+      await _service.updateTransaction(uid, transaction);
       _transactions = _transactions
           .map((item) => item.id == transaction.id ? transaction : item)
           .toList();
@@ -174,9 +197,11 @@ class CapyAppStore extends ChangeNotifier {
     });
   }
 
-  Future<void> deleteTransaction(int id) async {
+  Future<void> deleteTransaction(String id) async {
+    final uid = _currentUser?.id;
+    if (uid == null) return;
     await _performWrite(() async {
-      await _database.deleteTransaction(id);
+      await _service.deleteTransaction(uid, id);
       _transactions = _transactions.where((item) => item.id != id).toList();
     });
   }
@@ -186,8 +211,11 @@ class CapyAppStore extends ChangeNotifier {
     required int iconCodePoint,
     required int colorValue,
   }) async {
+    final uid = _currentUser?.id;
+    if (uid == null) return;
     await _performWrite(() async {
-      final saved = await _database.insertCategory(
+      final saved = await _service.insertCategory(
+        uid,
         CapyCategory(
           name: name.trim(),
           iconCodePoint: iconCodePoint,
@@ -204,8 +232,11 @@ class CapyAppStore extends ChangeNotifier {
     required double targetAmount,
     required double savedAmount,
   }) async {
+    final uid = _currentUser?.id;
+    if (uid == null) return;
     await _performWrite(() async {
-      final saved = await _database.insertGoal(
+      final saved = await _service.insertGoal(
+        uid,
         CapyGoal(
           name: name.trim(),
           targetAmount: targetAmount,
@@ -219,9 +250,13 @@ class CapyAppStore extends ChangeNotifier {
   }
 
   Future<void> updateGoal(CapyGoal goal) async {
+    final uid = _currentUser?.id;
+    if (uid == null) return;
     await _performWrite(() async {
-      await _database.updateGoal(goal);
-      _goals = _goals.map((item) => item.id == goal.id ? goal : item).toList();
+      await _service.updateGoal(uid, goal);
+      _goals = _goals
+          .map((item) => item.id == goal.id ? goal : item)
+          .toList();
       _sortGoals();
     });
   }

@@ -31,7 +31,7 @@ class ProfilePage extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     store.currentUser != null
-                        ? 'Active wallet • ${store.currentUsername ?? store.currentUser!.username}'
+                        ? 'Active wallet • ${store.currentUsername ?? store.currentUser!.email}'
                         : 'Local data mode is active',
                     style: theme.textTheme.bodyMedium,
                   ),
@@ -111,7 +111,7 @@ class ProfilePage extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'This build now includes 9+ screens, local SQLite storage, and accelerometer-based quick add.',
+                  'This build now includes 9+ screens, Firebase sync, and accelerometer-based quick add.',
                   style: theme.textTheme.bodyLarge,
                 ),
                 const SizedBox(height: 16),

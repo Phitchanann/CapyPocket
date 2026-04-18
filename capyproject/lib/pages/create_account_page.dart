@@ -1,6 +1,7 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
-import '../data/capy_database.dart';
+import '../services/firebase_service.dart';
 import '../state/capy_scope.dart';
 import 'ui_kit.dart';
 
@@ -13,7 +14,7 @@ class CreateAccountPage extends StatefulWidget {
 
 class _CreateAccountPageState extends State<CreateAccountPage> {
   final TextEditingController _displayNameController = TextEditingController();
-  final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _isSubmitting = false;
   String? _errorMessage;
@@ -24,27 +25,24 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
       navigator.pop();
       return;
     }
-
     navigator.pushReplacementNamed('/login');
   }
 
   @override
   void dispose() {
     _displayNameController.dispose();
-    _usernameController.dispose();
+    _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
   Future<void> _createAccount() async {
     final displayName = _displayNameController.text.trim();
-    final username = _usernameController.text.trim();
+    final email = _emailController.text.trim();
     final password = _passwordController.text;
 
-    if (username.isEmpty || password.isEmpty) {
-      setState(() {
-        _errorMessage = 'Enter username and password.';
-      });
+    if (email.isEmpty || password.isEmpty) {
+      setState(() => _errorMessage = 'Enter email and password.');
       return;
     }
 
@@ -54,35 +52,36 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
     });
 
     try {
-      final createdUser = await CapyDatabase.instance.createUser(
-        username: username,
+      final user = await FirebaseService.instance.register(
+        email: email,
         password: password,
-        displayName: displayName.isEmpty ? null : displayName,
+        displayName: displayName,
       );
 
-      if (!mounted || createdUser == null) {
-        return;
-      }
+      if (!mounted) return;
 
       final store = CapyScope.read(context);
-      store.loginUser(createdUser);
+      store.loginUser(user);
       if (rootTabNotifier.value != AppTab.home) {
         rootTabNotifier.value = AppTab.home;
       }
       Navigator.of(context).pushReplacementNamed('/root');
-    } catch (error) {
-      if (!mounted) {
-        return;
-      }
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
       setState(() {
-        _errorMessage = error.toString();
+        _errorMessage = switch (e.code) {
+          'email-already-in-use' =>
+            'An account with this email already exists.',
+          'invalid-email' => 'Invalid email address.',
+          'weak-password' => 'Password is too weak (min 6 characters).',
+          _ => e.message ?? 'Registration failed.',
+        };
       });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _errorMessage = error.toString());
     } finally {
-      if (mounted) {
-        setState(() {
-          _isSubmitting = false;
-        });
-      }
+      if (mounted) setState(() => _isSubmitting = false);
     }
   }
 
@@ -104,7 +103,10 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
               label: Text('Back to login', style: theme.textTheme.bodyMedium),
               style: TextButton.styleFrom(
                 foregroundColor: capyInkColor,
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 4,
+                  vertical: 8,
+                ),
                 visualDensity: VisualDensity.compact,
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
@@ -119,21 +121,22 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                   Text('Create account', style: theme.textTheme.titleLarge),
                   const SizedBox(height: 6),
                   Text(
-                    'Create a pocket owner before logging in.',
+                    'Create your CapyPocket account to start tracking.',
                     style: theme.textTheme.bodyMedium,
                   ),
                   const SizedBox(height: 16),
                   TextField(
                     controller: _displayNameController,
                     decoration: const InputDecoration(
-                      labelText: 'Display name',
+                      labelText: 'Display name (optional)',
                     ),
                     textInputAction: TextInputAction.next,
                   ),
                   const SizedBox(height: 12),
                   TextField(
-                    controller: _usernameController,
-                    decoration: const InputDecoration(labelText: 'Username'),
+                    controller: _emailController,
+                    decoration: const InputDecoration(labelText: 'Email'),
+                    keyboardType: TextInputType.emailAddress,
                     textInputAction: TextInputAction.next,
                   ),
                   const SizedBox(height: 12),

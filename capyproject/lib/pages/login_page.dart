@@ -1,7 +1,7 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
-import '../data/capy_database.dart';
-import '../data/capy_models.dart';
+import '../services/firebase_service.dart';
 import '../state/capy_scope.dart';
 import 'ui_kit.dart';
 
@@ -13,8 +13,7 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  late final Future<List<CapyUser>> _usersFuture;
-  final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _isSubmitting = false;
   String? _errorMessage;
@@ -25,31 +24,22 @@ class _LoginPageState extends State<LoginPage> {
       navigator.pop();
       return;
     }
-
     navigator.pushReplacementNamed('/root');
   }
 
   @override
-  void initState() {
-    super.initState();
-    _usersFuture = CapyDatabase.instance.fetchUsers();
-  }
-
-  @override
   void dispose() {
-    _usernameController.dispose();
+    _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
   Future<void> _login() async {
-    final username = _usernameController.text.trim();
+    final email = _emailController.text.trim();
     final password = _passwordController.text;
 
-    if (username.isEmpty || password.isEmpty) {
-      setState(() {
-        _errorMessage = 'Enter username and password.';
-      });
+    if (email.isEmpty || password.isEmpty) {
+      setState(() => _errorMessage = 'Enter email and password.');
       return;
     }
 
@@ -59,55 +49,41 @@ class _LoginPageState extends State<LoginPage> {
     });
 
     try {
-      final database = CapyDatabase.instance;
-      final existingUser = await database.fetchUserByUsername(username);
-      if (existingUser == null) {
-        if (!mounted) {
-          return;
-        }
-        setState(() {
-          _errorMessage = 'No account found. Create one first.';
-        });
-        return;
-      }
-
-      final authenticatedUser = await database.authenticateUser(
-        username: username,
+      final user = await FirebaseService.instance.signIn(
+        email: email,
         password: password,
       );
-      if (authenticatedUser == null) {
-        if (!mounted) {
-          return;
-        }
-        setState(() {
-          _errorMessage = 'Wrong password for this account.';
-        });
-        return;
-      }
 
-      if (!mounted) {
+      if (!mounted) return;
+
+      if (user == null) {
+        setState(() => _errorMessage = 'Sign in failed. Try again.');
         return;
       }
 
       final store = CapyScope.read(context);
-      store.loginUser(authenticatedUser);
+      store.loginUser(user);
       if (rootTabNotifier.value != AppTab.home) {
         rootTabNotifier.value = AppTab.home;
       }
       Navigator.of(context).pushReplacementNamed('/root');
-    } catch (error) {
-      if (!mounted) {
-        return;
-      }
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
       setState(() {
-        _errorMessage = error.toString();
+        _errorMessage = switch (e.code) {
+          'user-not-found' => 'No account found for this email.',
+          'wrong-password' => 'Wrong password.',
+          'invalid-credential' => 'Invalid email or password.',
+          'invalid-email' => 'Invalid email address.',
+          'too-many-requests' => 'Too many attempts. Try again later.',
+          _ => e.message ?? 'Authentication failed.',
+        };
       });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _errorMessage = error.toString());
     } finally {
-      if (mounted) {
-        setState(() {
-          _isSubmitting = false;
-        });
-      }
+      if (mounted) setState(() => _isSubmitting = false);
     }
   }
 
@@ -118,175 +94,138 @@ class _LoginPageState extends State<LoginPage> {
     return CapyPageFrame(
       showBottomBar: false,
       showFab: false,
-      child: FutureBuilder<List<CapyUser>>(
-        future: _usersFuture,
-        builder: (context, snapshot) {
-          final users = snapshot.data ?? const <CapyUser>[];
-          final hasAccounts = users.isNotEmpty;
-
-          Widget buildContentBlock() {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return WarmCard(
-                child: Column(
-                  children: [
-                    const Center(child: CapyBadge(size: 66, halo: true)),
-                    const SizedBox(height: 18),
-                    const CircularProgressIndicator(),
-                    const SizedBox(height: 12),
-                    Text(
-                      'Loading accounts...',
-                      style: theme.textTheme.bodyMedium,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20, 24, 20, 40),
+            child: SizedBox(
+              height: constraints.maxHeight - 64,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextButton.icon(
+                    onPressed: _goBack,
+                    icon: const Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      size: 16,
                     ),
-                  ],
-                ),
-              );
-            }
-
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (!hasAccounts)
-                  EmptyStateCard(
-                    title: 'No account yet',
-                    subtitle:
-                        'Create one first, then log in with username and password.',
-                    actionLabel: 'Create account',
-                    onPressed: () {
-                      Navigator.of(context).pushNamed('/create-account');
-                    },
-                  )
-                else
-                  WarmCard(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Center(child: CapyBadge(size: 66, halo: true)),
-                        const SizedBox(height: 16),
-                        Text('Login', style: theme.textTheme.titleLarge),
-                        const SizedBox(height: 6),
-                        Text(
-                          'Use your username and password to enter your wallet.',
-                          style: theme.textTheme.bodyMedium,
-                        ),
-                        const SizedBox(height: 16),
-                        TextField(
-                          controller: _usernameController,
-                          decoration: const InputDecoration(
-                            labelText: 'Username',
-                          ),
-                          textInputAction: TextInputAction.next,
-                        ),
-                        const SizedBox(height: 12),
-                        TextField(
-                          controller: _passwordController,
-                          obscureText: true,
-                          decoration: const InputDecoration(
-                            labelText: 'Password',
-                          ),
-                          onSubmitted: (_) => _login(),
-                        ),
-                        if (_errorMessage != null) ...[
-                          const SizedBox(height: 12),
-                          Text(
-                            _errorMessage!,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: capyNegativeColor,
-                            ),
-                          ),
-                        ],
-                        const SizedBox(height: 16),
-                        SizedBox(
-                          width: double.infinity,
-                          child: FilledButton(
-                            onPressed: _isSubmitting ? null : _login,
-                            child: _isSubmitting
-                                ? const SizedBox(
-                                    width: 18,
-                                    height: 18,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
+                    label: Text('Back', style: theme.textTheme.bodyMedium),
+                    style: TextButton.styleFrom(
+                      foregroundColor: capyInkColor,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 8,
+                      ),
+                      visualDensity: VisualDensity.compact,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  ),
+                  Expanded(
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 560),
+                        child: WarmCard(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Center(
+                                child: CapyBadge(size: 66, halo: true),
+                              ),
+                              const SizedBox(height: 16),
+                              Text('Login', style: theme.textTheme.titleLarge),
+                              const SizedBox(height: 6),
+                              Text(
+                                'Sign in with your email and password.',
+                                style: theme.textTheme.bodyMedium,
+                              ),
+                              const SizedBox(height: 16),
+                              TextField(
+                                controller: _emailController,
+                                decoration: const InputDecoration(
+                                  labelText: 'Email',
+                                ),
+                                keyboardType: TextInputType.emailAddress,
+                                textInputAction: TextInputAction.next,
+                              ),
+                              const SizedBox(height: 12),
+                              TextField(
+                                controller: _passwordController,
+                                obscureText: true,
+                                decoration: const InputDecoration(
+                                  labelText: 'Password',
+                                ),
+                                onSubmitted: (_) => _login(),
+                              ),
+                              if (_errorMessage != null) ...[
+                                const SizedBox(height: 12),
+                                Text(
+                                  _errorMessage!,
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: capyNegativeColor,
+                                  ),
+                                ),
+                              ],
+                              const SizedBox(height: 16),
+                              SizedBox(
+                                width: double.infinity,
+                                child: FilledButton(
+                                  onPressed: _isSubmitting ? null : _login,
+                                  child: _isSubmitting
+                                      ? const SizedBox(
+                                          width: 18,
+                                          height: 18,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                          ),
+                                        )
+                                      : const Text('Login'),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              Center(
+                                child: Column(
+                                  children: [
+                                    TextButton(
+                                      onPressed: () {
+                                        final store = CapyScope.read(context);
+                                        store.logout();
+                                        if (rootTabNotifier.value !=
+                                            AppTab.home) {
+                                          rootTabNotifier.value = AppTab.home;
+                                        }
+                                        Navigator.of(
+                                          context,
+                                        ).pushReplacementNamed('/root');
+                                      },
+                                      child: Text(
+                                        'Continue as guest',
+                                        style: theme.textTheme.bodyMedium,
+                                      ),
                                     ),
-                                  )
-                                : const Text('Login'),
+                                    TextButton(
+                                      onPressed: () {
+                                        Navigator.of(context).pushNamed(
+                                          '/create-account',
+                                        );
+                                      },
+                                      child: Text(
+                                        'Create account instead?',
+                                        style: theme.textTheme.bodyMedium,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ],
+                      ),
                     ),
                   ),
-                const SizedBox(height: 12),
-                Center(
-                  child: Column(
-                    children: [
-                      TextButton(
-                        onPressed: () {
-                          final store = CapyScope.read(context);
-                          store.logout();
-                          if (rootTabNotifier.value != AppTab.home) {
-                            rootTabNotifier.value = AppTab.home;
-                          }
-                          Navigator.of(context).pushReplacementNamed('/root');
-                        },
-                        child: Text(
-                          'Continue as guest',
-                          style: theme.textTheme.bodyMedium,
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.of(context).pushNamed('/create-account');
-                        },
-                        child: Text(
-                          'Create account instead?',
-                          style: theme.textTheme.bodyMedium,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            );
-          }
-
-          return LayoutBuilder(
-            builder: (context, constraints) {
-              return SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 24, 20, 40),
-                child: SizedBox(
-                  height: constraints.maxHeight - 64,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      TextButton.icon(
-                        onPressed: _goBack,
-                        icon: const Icon(
-                          Icons.arrow_back_ios_new_rounded,
-                          size: 16,
-                        ),
-                        label: Text('Back', style: theme.textTheme.bodyMedium),
-                        style: TextButton.styleFrom(
-                          foregroundColor: capyInkColor,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 4,
-                            vertical: 8,
-                          ),
-                          visualDensity: VisualDensity.compact,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        ),
-                      ),
-                      Expanded(
-                        child: Center(
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 560),
-                            child: buildContentBlock(),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
+                ],
+              ),
+            ),
           );
         },
       ),

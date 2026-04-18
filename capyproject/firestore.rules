@@ -1,0 +1,101 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasOnly([
+            'email',
+            'displayName',
+            'monthlyIncome',
+            'savingsGoal',
+            'createdAt'
+          ])
+          && data.email is string
+          && data.displayName is string
+          && data.monthlyIncome is number
+          && data.savingsGoal is number
+          && data.createdAt is timestamp;
+    }
+
+    function isValidTransaction(data) {
+      return data.keys().hasOnly([
+            'title',
+            'amount',
+            'category',
+            'type',
+            'note',
+            'receiptImageUrl',
+            'createdAt'
+          ])
+          && data.title is string
+          && data.amount is number
+          && data.amount > 0
+          && data.category is string
+          && data.type is string
+          && data.type in ['expense', 'income', 'pocket']
+          && data.note is string
+          && (!('receiptImageUrl' in data) || data.receiptImageUrl == null || data.receiptImageUrl is string)
+          && data.createdAt is timestamp;
+    }
+
+    function isValidCategory(data) {
+      return data.keys().hasOnly(['name', 'iconCode', 'colorValue'])
+          && data.name is string
+          && data.iconCode is int
+          && data.colorValue is int;
+    }
+
+    function isValidGoal(data) {
+      return data.keys().hasOnly([
+            'name',
+            'targetAmount',
+            'savedAmount',
+            'createdAt'
+          ])
+          && data.name is string
+          && data.targetAmount is number
+          && data.targetAmount > 0
+          && data.savedAmount is number
+          && data.savedAmount >= 0
+          && data.createdAt is timestamp;
+    }
+
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+
+      allow create: if isOwner(userId) && isValidUser(request.resource.data);
+
+      allow update: if isOwner(userId)
+        && isValidUser(request.resource.data)
+        && request.resource.data.email == resource.data.email
+        && request.resource.data.createdAt == resource.data.createdAt;
+
+      allow delete: if false;
+
+      match /transactions/{txId} {
+        allow read: if isOwner(userId);
+        allow create, update: if isOwner(userId) && isValidTransaction(request.resource.data);
+        allow delete: if isOwner(userId);
+      }
+
+      match /categories/{categoryId} {
+        allow read: if isOwner(userId);
+        allow create, update: if isOwner(userId) && isValidCategory(request.resource.data);
+        allow delete: if isOwner(userId);
+      }
+
+      match /goals/{goalId} {
+        allow read: if isOwner(userId);
+        allow create, update: if isOwner(userId) && isValidGoal(request.resource.data);
+        allow delete: if isOwner(userId);
+      }
+    }
+  }
+}

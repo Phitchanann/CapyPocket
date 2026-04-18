@@ -1,5 +1,4 @@
-import 'dart:io';
-
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
 import '../data/capy_models.dart';
@@ -131,8 +130,9 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
   Widget _buildReceiptViewer({required String imageUrl}) {
     final theme = Theme.of(context);
     final isRemote = imageUrl.startsWith('http');
-    final file = isRemote ? null : File(imageUrl);
-    final fileExists = file != null && file.existsSync();
+
+    // On web, Image.file is not supported — all saved receipts are Firebase URLs anyway
+    final showNetwork = isRemote || kIsWeb;
 
     return WarmCard(
       color: const Color(0xFFF5E7D2),
@@ -147,7 +147,7 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
             ],
           ),
           const SizedBox(height: 12),
-          if (isRemote)
+          if (showNetwork)
             ClipRRect(
               borderRadius: BorderRadius.circular(16),
               child: Image.network(
@@ -156,16 +156,6 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
                 height: 220,
                 fit: BoxFit.cover,
                 errorBuilder: (_, __, ___) => _receiptError(theme),
-              ),
-            )
-          else if (fileExists)
-            ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: Image.file(
-                file,
-                width: double.infinity,
-                height: 220,
-                fit: BoxFit.cover,
               ),
             )
           else
