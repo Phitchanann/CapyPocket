@@ -77,95 +77,126 @@ class _AddCategoryPageState extends State<AddCategoryPage> {
     final store = CapyScope.watch(context);
 
     return CapyPageFrame(
-      currentTab: AppTab.money,
+      showBottomBar: false,
+      showFab: false,
       child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 24, 20, 132),
-        child: WarmCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Add category', style: Theme.of(context).textTheme.titleLarge),
-              const SizedBox(height: 18),
-              Center(
-                child: Container(
-                  width: 120,
-                  height: 120,
-                  decoration: BoxDecoration(
-                    color: selectedColor.withValues(alpha: 0.14),
-                    borderRadius: BorderRadius.circular(26),
-                    border: Border.all(color: capyLineColor),
+        padding: const EdgeInsets.fromLTRB(20, 24, 20, 40),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextButton.icon(
+              onPressed: () => popOrGoToRoot(context, fallbackTab: AppTab.home),
+              icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 16),
+              label: Text(
+                'Back',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              style: TextButton.styleFrom(
+                foregroundColor: capyInkColor,
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                visualDensity: VisualDensity.compact,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+            ),
+            const SizedBox(height: 8),
+            WarmCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Add category',
+                    style: Theme.of(context).textTheme.titleLarge,
                   ),
-                  child: Icon(selectedIcon, size: 54, color: selectedColor),
-                ),
-              ),
-              const SizedBox(height: 18),
-              TextField(
-                controller: nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Name',
-                  hintText: 'Category name',
-                ),
-              ),
-              const SizedBox(height: 18),
-              Text('Icon', style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                children: iconChoices.map((icon) {
-                  final selected = selectedIcon == icon;
-                  return InkWell(
-                    borderRadius: BorderRadius.circular(18),
-                    onTap: () => setState(() => selectedIcon = icon),
+                  const SizedBox(height: 18),
+                  Center(
                     child: Container(
-                      width: 54,
-                      height: 54,
+                      width: 120,
+                      height: 120,
                       decoration: BoxDecoration(
-                        color: selected ? selectedColor.withValues(alpha: 0.16) : capySurfaceColor,
+                        color: selectedColor.withValues(alpha: 0.14),
+                        borderRadius: BorderRadius.circular(26),
+                        border: Border.all(color: capyLineColor),
+                      ),
+                      child: Icon(selectedIcon, size: 54, color: selectedColor),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  TextField(
+                    controller: nameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Name',
+                      hintText: 'Category name',
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  Text('Icon', style: Theme.of(context).textTheme.titleMedium),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: iconChoices.map((icon) {
+                      final selected = selectedIcon == icon;
+                      return InkWell(
                         borderRadius: BorderRadius.circular(18),
-                        border: Border.all(
-                          color: selected ? selectedColor : capyLineColor,
-                          width: selected ? 1.5 : 1,
+                        onTap: () => setState(() => selectedIcon = icon),
+                        child: Container(
+                          width: 54,
+                          height: 54,
+                          decoration: BoxDecoration(
+                            color: selected
+                                ? selectedColor.withValues(alpha: 0.16)
+                                : capySurfaceColor,
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(
+                              color: selected ? selectedColor : capyLineColor,
+                              width: selected ? 1.5 : 1,
+                            ),
+                          ),
+                          child: Icon(
+                            icon,
+                            color: selected ? selectedColor : capyInkColor,
+                          ),
                         ),
-                      ),
-                      child: Icon(icon, color: selected ? selectedColor : capyInkColor),
-                    ),
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: 18),
-              Text('Color', style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                children: colorChoices.map((color) {
-                  final selected = selectedColor == color;
-                  return InkWell(
-                    borderRadius: BorderRadius.circular(999),
-                    onTap: () => setState(() => selectedColor = color),
-                    child: Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: color,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: selected ? capyInkColor : Colors.transparent,
-                          width: 2,
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 18),
+                  Text('Color', style: Theme.of(context).textTheme.titleMedium),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: colorChoices.map((color) {
+                      final selected = selectedColor == color;
+                      return InkWell(
+                        borderRadius: BorderRadius.circular(999),
+                        onTap: () => setState(() => selectedColor = color),
+                        child: Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: color,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: selected
+                                  ? capyInkColor
+                                  : Colors.transparent,
+                              width: 2,
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-                  );
-                }).toList(),
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 18),
+                  FilledButton(
+                    onPressed: store.isSaving ? null : _saveCategory,
+                    child: Text(store.isSaving ? 'Saving...' : 'Save category'),
+                  ),
+                ],
               ),
-              const SizedBox(height: 18),
-              FilledButton(
-                onPressed: store.isSaving ? null : _saveCategory,
-                child: Text(store.isSaving ? 'Saving...' : 'Save category'),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

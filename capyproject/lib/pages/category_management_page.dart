@@ -35,12 +35,25 @@ class _CategoryManagementPageState extends State<CategoryManagementPage> {
         .toList();
 
     return CapyPageFrame(
-      currentTab: AppTab.money,
+      showBottomBar: false,
+      showFab: false,
       child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 24, 20, 132),
+        padding: const EdgeInsets.fromLTRB(20, 24, 20, 40),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            TextButton.icon(
+              onPressed: () => popOrGoToRoot(context, fallbackTab: AppTab.home),
+              icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 16),
+              label: Text('Back', style: theme.textTheme.bodyMedium),
+              style: TextButton.styleFrom(
+                foregroundColor: capyInkColor,
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                visualDensity: VisualDensity.compact,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+            ),
+            const SizedBox(height: 8),
             Text('Categories', style: theme.textTheme.titleLarge),
             const SizedBox(height: 6),
             Text(
@@ -63,7 +76,8 @@ class _CategoryManagementPageState extends State<CategoryManagementPage> {
                 subtitle:
                     'Add a new category and it will appear here immediately for your transaction forms.',
                 actionLabel: 'Add category',
-                onPressed: () => Navigator.of(context).pushNamed('/add-category'),
+                onPressed: () =>
+                    Navigator.of(context).pushNamed('/add-category'),
                 icon: Icons.category_outlined,
               )
             else

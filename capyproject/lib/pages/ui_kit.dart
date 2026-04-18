@@ -133,6 +133,19 @@ enum AppTab { home, goals, money, profile }
 
 final ValueNotifier<AppTab> rootTabNotifier = ValueNotifier(AppTab.home);
 
+void popOrGoToRoot(BuildContext context, {AppTab fallbackTab = AppTab.home}) {
+  final navigator = Navigator.of(context);
+  if (navigator.canPop()) {
+    navigator.pop();
+    return;
+  }
+
+  if (rootTabNotifier.value != fallbackTab) {
+    rootTabNotifier.value = fallbackTab;
+  }
+  navigator.pushReplacementNamed('/root');
+}
+
 void navigateToTab(BuildContext context, AppTab tab) {
   final navigator = Navigator.of(context);
   final isAtRoot = !navigator.canPop();

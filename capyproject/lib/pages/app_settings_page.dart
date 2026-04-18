@@ -13,12 +13,26 @@ class AppSettingsPage extends StatelessWidget {
     final activeBudgetCount = store.expenseByCategory.length;
 
     return CapyPageFrame(
-      currentTab: AppTab.profile,
+      showBottomBar: false,
+      showFab: false,
       child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 24, 20, 132),
+        padding: const EdgeInsets.fromLTRB(20, 24, 20, 40),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            TextButton.icon(
+              onPressed: () =>
+                  popOrGoToRoot(context, fallbackTab: AppTab.profile),
+              icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 16),
+              label: Text('Back', style: theme.textTheme.bodyMedium),
+              style: TextButton.styleFrom(
+                foregroundColor: capyInkColor,
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                visualDensity: VisualDensity.compact,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+            ),
+            const SizedBox(height: 8),
             WarmCard(
               child: Column(
                 children: [
@@ -83,7 +97,8 @@ class AppSettingsPage extends StatelessWidget {
               subtitle: activeBudgetCount == 0
                   ? 'Tune daily and weekly reminders.'
                   : '$activeBudgetCount categories can trigger warning reminders.',
-              onTap: () => Navigator.of(context).pushNamed('/reminder-settings'),
+              onTap: () =>
+                  Navigator.of(context).pushNamed('/reminder-settings'),
             ),
             const SizedBox(height: 12),
             SettingLine(
@@ -98,8 +113,10 @@ class AppSettingsPage extends StatelessWidget {
             SettingLine(
               icon: Icons.category_rounded,
               title: 'Category management',
-              subtitle: '${store.categories.length} reusable categories in local storage.',
-              onTap: () => Navigator.of(context).pushNamed('/category-management'),
+              subtitle:
+                  '${store.categories.length} reusable categories in local storage.',
+              onTap: () =>
+                  Navigator.of(context).pushNamed('/category-management'),
             ),
             const SizedBox(height: 18),
             WarmCard(
@@ -123,7 +140,8 @@ class AppSettingsPage extends StatelessWidget {
                   child: const Text('Login'),
                 );
                 final createAccountButton = FilledButton(
-                  onPressed: () => Navigator.of(context).pushNamed('/create-account'),
+                  onPressed: () =>
+                      Navigator.of(context).pushNamed('/create-account'),
                   child: const Text('Create account'),
                 );
 
@@ -132,7 +150,10 @@ class AppSettingsPage extends StatelessWidget {
                     children: [
                       SizedBox(width: double.infinity, child: loginButton),
                       const SizedBox(height: 12),
-                      SizedBox(width: double.infinity, child: createAccountButton),
+                      SizedBox(
+                        width: double.infinity,
+                        child: createAccountButton,
+                      ),
                     ],
                   );
                 }

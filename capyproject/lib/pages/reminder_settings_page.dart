@@ -54,18 +54,36 @@ class _ReminderSettingsPageState extends State<ReminderSettingsPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final store = CapyScope.watch(context);
-    final activeCount = [dailyReminder, weeklySummary, budgetWarning]
-        .where((value) => value)
-        .length;
-    final formattedTime = MaterialLocalizations.of(context).formatTimeOfDay(reminderTime);
+    final activeCount = [
+      dailyReminder,
+      weeklySummary,
+      budgetWarning,
+    ].where((value) => value).length;
+    final formattedTime = MaterialLocalizations.of(
+      context,
+    ).formatTimeOfDay(reminderTime);
 
     return CapyPageFrame(
-      currentTab: AppTab.profile,
+      showBottomBar: false,
+      showFab: false,
       child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 24, 20, 132),
+        padding: const EdgeInsets.fromLTRB(20, 24, 20, 40),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            TextButton.icon(
+              onPressed: () =>
+                  popOrGoToRoot(context, fallbackTab: AppTab.profile),
+              icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 16),
+              label: Text('Back', style: theme.textTheme.bodyMedium),
+              style: TextButton.styleFrom(
+                foregroundColor: capyInkColor,
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                visualDensity: VisualDensity.compact,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+            ),
+            const SizedBox(height: 8),
             Text('Reminders', style: theme.textTheme.titleLarge),
             const SizedBox(height: 6),
             Text(
@@ -99,9 +117,19 @@ class _ReminderSettingsPageState extends State<ReminderSettingsPage> {
                     spacing: 8,
                     runSpacing: 8,
                     children: [
-                      TimeChip(label: reminderTime.hourOfPeriod == 0 ? '12' : '${reminderTime.hourOfPeriod}'),
-                      TimeChip(label: reminderTime.minute.toString().padLeft(2, '0')),
-                      TimeChip(label: reminderTime.period == DayPeriod.am ? 'AM' : 'PM'),
+                      TimeChip(
+                        label: reminderTime.hourOfPeriod == 0
+                            ? '12'
+                            : '${reminderTime.hourOfPeriod}',
+                      ),
+                      TimeChip(
+                        label: reminderTime.minute.toString().padLeft(2, '0'),
+                      ),
+                      TimeChip(
+                        label: reminderTime.period == DayPeriod.am
+                            ? 'AM'
+                            : 'PM',
+                      ),
                     ],
                   ),
                   const SizedBox(height: 12),

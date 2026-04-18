@@ -20,12 +20,25 @@ class BudgetSetupPage extends StatelessWidget {
     }).length;
 
     return CapyPageFrame(
-      currentTab: AppTab.money,
+      showBottomBar: false,
+      showFab: false,
       child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 24, 20, 132),
+        padding: const EdgeInsets.fromLTRB(20, 24, 20, 40),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            TextButton.icon(
+              onPressed: () => popOrGoToRoot(context, fallbackTab: AppTab.home),
+              icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 16),
+              label: Text('Back', style: theme.textTheme.bodyMedium),
+              style: TextButton.styleFrom(
+                foregroundColor: capyInkColor,
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                visualDensity: VisualDensity.compact,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+            ),
+            const SizedBox(height: 8),
             Text('Budget setup', style: theme.textTheme.titleLarge),
             const SizedBox(height: 6),
             Text(
@@ -45,10 +58,7 @@ class BudgetSetupPage extends StatelessWidget {
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: MiniStatCard(
-                    label: 'Alerts',
-                    value: '$alertCount',
-                  ),
+                  child: MiniStatCard(label: 'Alerts', value: '$alertCount'),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -66,7 +76,8 @@ class BudgetSetupPage extends StatelessWidget {
                 subtitle:
                     'Once expenses are recorded, this page will turn them into category-based budget previews.',
                 actionLabel: 'Add expense',
-                onPressed: () => Navigator.of(context).pushNamed('/add-transaction'),
+                onPressed: () =>
+                    Navigator.of(context).pushNamed('/add-transaction'),
                 icon: Icons.account_balance_wallet_outlined,
               )
             else
@@ -77,7 +88,8 @@ class BudgetSetupPage extends StatelessWidget {
                       title: item.key,
                       spent: formatMoney(item.value),
                       limit: formatMoney(_suggestedLimit(item.value)),
-                      progress: (item.value / _suggestedLimit(item.value)).clamp(0, 1),
+                      progress: (item.value / _suggestedLimit(item.value))
+                          .clamp(0, 1),
                     ),
                     const SizedBox(height: 12),
                   ],
@@ -113,7 +125,8 @@ class BudgetSetupPage extends StatelessWidget {
               children: [
                 Expanded(
                   child: OutlinedButton.icon(
-                    onPressed: () => Navigator.of(context).pushNamed('/category-management'),
+                    onPressed: () =>
+                        Navigator.of(context).pushNamed('/category-management'),
                     icon: const Icon(Icons.category_outlined),
                     label: const Text('Categories'),
                   ),
@@ -121,7 +134,8 @@ class BudgetSetupPage extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: FilledButton.icon(
-                    onPressed: () => Navigator.of(context).pushNamed('/add-transaction'),
+                    onPressed: () =>
+                        Navigator.of(context).pushNamed('/add-transaction'),
                     icon: const Icon(Icons.add_rounded),
                     label: const Text('Add expense'),
                   ),
