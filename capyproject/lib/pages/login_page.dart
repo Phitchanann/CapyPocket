@@ -13,7 +13,7 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _identifierController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _isSubmitting = false;
   String? _errorMessage;
@@ -29,17 +29,17 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   void dispose() {
-    _emailController.dispose();
+    _identifierController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
   Future<void> _login() async {
-    final email = _emailController.text.trim();
+    final identifier = _identifierController.text.trim();
     final password = _passwordController.text;
 
-    if (email.isEmpty || password.isEmpty) {
-      setState(() => _errorMessage = 'Enter email and password.');
+    if (identifier.isEmpty || password.isEmpty) {
+      setState(() => _errorMessage = 'Enter email/username and password.');
       return;
     }
 
@@ -50,7 +50,7 @@ class _LoginPageState extends State<LoginPage> {
 
     try {
       final user = await FirebaseService.instance.signIn(
-        email: email,
+        identifier: identifier,
         password: password,
       );
 
@@ -71,10 +71,10 @@ class _LoginPageState extends State<LoginPage> {
       if (!mounted) return;
       setState(() {
         _errorMessage = switch (e.code) {
-          'user-not-found' => 'No account found for this email.',
+          'user-not-found' => 'No account found for this email or username.',
           'wrong-password' => 'Wrong password.',
-          'invalid-credential' => 'Invalid email or password.',
-          'invalid-email' => 'Invalid email address.',
+          'invalid-credential' => 'Invalid email/username or password.',
+          'invalid-email' => 'Invalid email or username.',
           'too-many-requests' => 'Too many attempts. Try again later.',
           _ => e.message ?? 'Authentication failed.',
         };
@@ -136,16 +136,16 @@ class _LoginPageState extends State<LoginPage> {
                               Text('Login', style: theme.textTheme.titleLarge),
                               const SizedBox(height: 6),
                               Text(
-                                'Sign in with your email and password.',
+                                'Sign in with your email or username and password.',
                                 style: theme.textTheme.bodyMedium,
                               ),
                               const SizedBox(height: 16),
                               TextField(
-                                controller: _emailController,
+                                controller: _identifierController,
                                 decoration: const InputDecoration(
-                                  labelText: 'Email',
+                                  labelText: 'Email or username',
                                 ),
-                                keyboardType: TextInputType.emailAddress,
+                                keyboardType: TextInputType.text,
                                 textInputAction: TextInputAction.next,
                               ),
                               const SizedBox(height: 12),
@@ -205,9 +205,9 @@ class _LoginPageState extends State<LoginPage> {
                                     ),
                                     TextButton(
                                       onPressed: () {
-                                        Navigator.of(context).pushNamed(
-                                          '/create-account',
-                                        );
+                                        Navigator.of(
+                                          context,
+                                        ).pushNamed('/create-account');
                                       },
                                       child: Text(
                                         'Create account instead?',

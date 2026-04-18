@@ -13,12 +13,18 @@ service cloud.firestore {
       return data.keys().hasOnly([
             'email',
             'displayName',
+            'displayNameLower',
+            'username',
+            'usernameLower',
             'monthlyIncome',
             'savingsGoal',
             'createdAt'
           ])
           && data.email is string
           && data.displayName is string
+          && data.displayNameLower is string
+          && data.username is string
+          && data.usernameLower is string
           && data.monthlyIncome is number
           && data.savingsGoal is number
           && data.createdAt is timestamp;

@@ -18,9 +18,10 @@ class FirebaseService {
   // ─── Auth ─────────────────────────────────────────────────────────────────
 
   Future<CapyUser?> signIn({
-    required String email,
+    required String identifier,
     required String password,
   }) async {
+    final email = await _resolveEmailFromIdentifier(identifier);
     final cred = await _auth.signInWithEmailAndPassword(
       email: email,
       password: password,
@@ -40,11 +41,15 @@ class FirebaseService {
     );
     final uid = cred.user!.uid;
     final name = displayName.isEmpty ? email.split('@').first : displayName;
+    final normalizedName = name.trim().toLowerCase();
     final now = DateTime.now();
 
     await _db.collection('users').doc(uid).set({
       'email': email,
       'displayName': name,
+      'displayNameLower': normalizedName,
+      'username': name,
+      'usernameLower': normalizedName,
       'monthlyIncome': 0.0,
       'savingsGoal': 0.0,
       'createdAt': Timestamp.fromDate(now),
@@ -83,6 +88,42 @@ class FirebaseService {
       savingsGoal: (data['savingsGoal'] as num?)?.toDouble() ?? 0,
       createdAt: ts is Timestamp ? ts.toDate() : DateTime.now(),
     );
+  }
+
+  Future<String> _resolveEmailFromIdentifier(String identifier) async {
+    final normalized = identifier.trim();
+    if (normalized.contains('@')) return normalized;
+
+    final lookupKey = normalized.toLowerCase();
+
+    final usersByUsername = await _db
+        .collection('users')
+        .where('usernameLower', isEqualTo: lookupKey)
+        .limit(1)
+        .get();
+    if (usersByUsername.docs.isNotEmpty) {
+      return usersByUsername.docs.first.data()['email'] as String;
+    }
+
+    final usersByDisplayName = await _db
+        .collection('users')
+        .where('displayNameLower', isEqualTo: lookupKey)
+        .limit(1)
+        .get();
+    if (usersByDisplayName.docs.isNotEmpty) {
+      return usersByDisplayName.docs.first.data()['email'] as String;
+    }
+
+    final usersByRawDisplayName = await _db
+        .collection('users')
+        .where('displayName', isEqualTo: normalized)
+        .limit(1)
+        .get();
+    if (usersByRawDisplayName.docs.isNotEmpty) {
+      return usersByRawDisplayName.docs.first.data()['email'] as String;
+    }
+
+    return normalized;
   }
 
   // ─── Transactions ─────────────────────────────────────────────────────────
@@ -174,9 +215,7 @@ class FirebaseService {
   }
 
   Future<CapyGoal> insertGoal(String uid, CapyGoal goal) async {
-    final ref = await _db
-        .collection('users/$uid/goals')
-        .add(_goalToMap(goal));
+    final ref = await _db.collection('users/$uid/goals').add(_goalToMap(goal));
     return goal.copyWith(id: ref.id);
   }
 
