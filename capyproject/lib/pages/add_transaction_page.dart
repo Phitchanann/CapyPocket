@@ -156,7 +156,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
       }
     }
 
-    await store.addTransaction(
+    final saved = await store.addTransaction(
       title: '${type.name[0].toUpperCase()}${type.name.substring(1)} entry',
       category: category!,
       note: '',
@@ -167,7 +167,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
     );
 
     if (!mounted) return;
-    if (store.errorMessage != null) {
+    if (!saved || store.errorMessage != null) {
       showSavedMessage(context, 'Could not save transaction.');
       return;
     }

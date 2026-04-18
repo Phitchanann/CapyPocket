@@ -218,7 +218,7 @@ class CapyAppStore extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> addTransaction({
+  Future<bool> addTransaction({
     required String title,
     required String category,
     required String note,
@@ -228,7 +228,11 @@ class CapyAppStore extends ChangeNotifier {
     String? receiptImageUrl,
   }) async {
     final uid = _currentUser?.id;
-    if (uid == null) return;
+    if (uid == null) {
+      _errorMessage = 'Please log in before adding a transaction.';
+      notifyListeners();
+      return false;
+    }
     await _performWrite(() async {
       final saved = await _service.insertTransaction(
         uid,
@@ -245,6 +249,7 @@ class CapyAppStore extends ChangeNotifier {
       _transactions = [saved, ..._transactions];
       _sortTransactions();
     });
+    return _errorMessage == null;
   }
 
   Future<void> updateTransaction(CapyTransaction transaction) async {

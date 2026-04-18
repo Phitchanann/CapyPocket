@@ -1462,7 +1462,7 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
     final store = CapyScope.read(rootContext);
     final selectedCategory = category!;
     final message = '$entryType saved in $selectedCategory';
-    await store.addTransaction(
+    final saved = await store.addTransaction(
       title: '$entryType • $selectedCategory',
       category: selectedCategory,
       note: noteController.text.trim(),
@@ -1472,7 +1472,7 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
     if (!mounted) {
       return;
     }
-    if (store.errorMessage != null) {
+    if (!saved || store.errorMessage != null) {
       if (rootContext.mounted) {
         showSavedMessage(rootContext, 'Could not save entry.');
       }

@@ -82,7 +82,7 @@ class _QuickAddPageState extends State<QuickAddPage> {
     }
 
     final store = CapyScope.read(context);
-    await store.addTransaction(
+    final saved = await store.addTransaction(
       title: 'Quick ${selectedType.name}',
       category: selectedCategory!,
       note: 'Added from quick keypad',
@@ -95,7 +95,7 @@ class _QuickAddPageState extends State<QuickAddPage> {
       return;
     }
 
-    if (store.errorMessage != null) {
+    if (!saved || store.errorMessage != null) {
       showSavedMessage(context, 'Could not save quick transaction.');
       return;
     }
