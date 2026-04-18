@@ -555,22 +555,35 @@ class KeypadButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(22),
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: capySurfaceColor.withValues(alpha: 0.94),
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: capyLineColor),
-        ),
-        child: Center(
-          child: icon != null
-              ? Icon(icon, color: capyInkColor)
-              : Text(
-                  label ?? '',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
+    return Material(
+      color: capySurfaceColor.withValues(alpha: 0.96),
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: onTap,
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: capyLineColor),
+            boxShadow: [
+              BoxShadow(
+                color: capyInkColor.withValues(alpha: 0.04),
+                blurRadius: 12,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Center(
+            child: icon != null
+                ? Icon(icon, color: capyInkColor, size: 22)
+                : Text(
+                    label ?? '',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+          ),
         ),
       ),
     );

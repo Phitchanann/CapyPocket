@@ -17,6 +17,8 @@ class _QuickAddPageState extends State<QuickAddPage> {
   CapyTransactionType selectedType = CapyTransactionType.expense;
   bool _seededFromRoute = false;
 
+  double get _amountValue => double.tryParse(amountText) ?? 0;
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -53,6 +55,10 @@ class _QuickAddPageState extends State<QuickAddPage> {
       }
       amountText = amountText.substring(0, amountText.length - 1);
     });
+  }
+
+  String _amountLabel() {
+    return formatMoney(_amountValue);
   }
 
   Future<void> _saveQuickTransaction() async {
@@ -98,26 +104,70 @@ class _QuickAddPageState extends State<QuickAddPage> {
     return CapyPageFrame(
       currentTab: AppTab.money,
       child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 24, 20, 132),
+        padding: EdgeInsets.fromLTRB(
+          20,
+          22,
+          20,
+          132 + MediaQuery.of(context).padding.bottom,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('New entry', style: theme.textTheme.titleLarge),
             const SizedBox(height: 18),
-            const Center(child: CapyBadge(size: 72, halo: true)),
-            const SizedBox(height: 12),
-            Center(child: Text(formatMoney(double.tryParse(amountText) ?? 0), style: theme.textTheme.headlineMedium)),
-            const SizedBox(height: 6),
-            Center(
-              child: Text(
-                'Tap the keypad for a fast mobile-first entry.',
-                style: theme.textTheme.bodyMedium,
-              ),
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                Positioned(
+                  top: 0,
+                  right: 0,
+                  child: Container(
+                    width: 154,
+                    height: 154,
+                    decoration: BoxDecoration(
+                      color: capySoftCardColor.withValues(alpha: 0.26),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+                Positioned(
+                  left: -42,
+                  top: 56,
+                  child: Container(
+                    width: 128,
+                    height: 128,
+                    decoration: BoxDecoration(
+                      color: capySoftCardAltColor.withValues(alpha: 0.24),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+                Column(
+                  children: [
+                    const CapyBadge(size: 78, halo: true),
+                    const SizedBox(height: 14),
+                    Text(
+                      _amountLabel(),
+                      style: theme.textTheme.headlineMedium?.copyWith(
+                        fontSize: 44,
+                        fontWeight: FontWeight.w900,
+                        height: 1,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Tap the keypad for a fast mobile-first entry.',
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodyMedium?.copyWith(fontSize: 14),
+                    ),
+                  ],
+                ),
+              ],
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 20),
             Wrap(
-              spacing: 8,
-              runSpacing: 8,
+              spacing: 10,
+              runSpacing: 10,
               children: CapyTransactionType.values.map((entryType) {
                 final selected = selectedType == entryType;
                 return ChoiceChip(
@@ -130,75 +180,122 @@ class _QuickAddPageState extends State<QuickAddPage> {
                   selectedColor: capyInkColor,
                   labelStyle: TextStyle(
                     color: selected ? capySurfaceColor : capyInkColor,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.2,
                   ),
                   backgroundColor: capySurfaceColor,
                   side: const BorderSide(color: capyLineColor),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
                 );
               }).toList(),
             ),
-            const SizedBox(height: 18),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: categories
-                  .map(
-                    (item) => ChoiceChip(
-                      label: Text(item.name),
-                      selected: selectedCategory == item.name,
-                      onSelected: (_) => setState(() => selectedCategory = item.name),
-                      selectedColor: item.color.withValues(alpha: 0.9),
-                      backgroundColor: capySurfaceColor,
-                      labelStyle: TextStyle(
-                        color: selectedCategory == item.name ? capySurfaceColor : capyInkColor,
-                        fontWeight: FontWeight.w700,
-                      ),
-                      avatar: Icon(item.icon, size: 18, color: selectedCategory == item.name ? capySurfaceColor : item.color),
-                      side: const BorderSide(color: capyLineColor),
-                    ),
-                  )
-                  .toList(),
-            ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 22),
             WarmCard(
-              color: const Color(0xFFF4E6D5),
+              color: const Color(0xFFF4E9D9),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('Recent tags', style: theme.textTheme.titleMedium),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 10),
                   Text(
                     selectedCategory == null
                         ? 'Choose a category to keep your quick entry organized.'
                         : 'Selected category: $selectedCategory',
                     style: theme.textTheme.bodyMedium,
                   ),
+                  if (categories.isNotEmpty) ...[
+                    const SizedBox(height: 14),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          for (final item in categories.take(5)) ...[
+                            Padding(
+                              padding: const EdgeInsets.only(right: 10),
+                              child: ChoiceChip(
+                                label: Text(item.name),
+                                selected: selectedCategory == item.name,
+                                onSelected: (_) => setState(
+                                  () => selectedCategory = item.name,
+                                ),
+                                selectedColor: item.color.withValues(
+                                  alpha: 0.92,
+                                ),
+                                backgroundColor: capySurfaceColor,
+                                labelStyle: TextStyle(
+                                  color: selectedCategory == item.name
+                                      ? capySurfaceColor
+                                      : capyInkColor,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                                avatar: Icon(
+                                  item.icon,
+                                  size: 18,
+                                  color: selectedCategory == item.name
+                                      ? capySurfaceColor
+                                      : item.color,
+                                ),
+                                side: const BorderSide(color: capyLineColor),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
             const SizedBox(height: 18),
-            GridView.count(
-              crossAxisCount: 3,
+            GridView.builder(
               shrinkWrap: true,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
               physics: const NeverScrollableScrollPhysics(),
-              children: [
-                for (final label in ['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0'])
-                  KeypadButton(
-                    label: label,
-                    onTap: () => _appendValue(label),
-                  ),
-                KeypadButton(
-                  icon: Icons.backspace_outlined,
-                  onTap: _backspace,
-                ),
-              ],
+              itemCount: 12,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3,
+                crossAxisSpacing: 10,
+                mainAxisSpacing: 10,
+                childAspectRatio: 1.16,
+              ),
+              itemBuilder: (context, index) {
+                const labels = [
+                  '1',
+                  '2',
+                  '3',
+                  '4',
+                  '5',
+                  '6',
+                  '7',
+                  '8',
+                  '9',
+                  '.',
+                  '0',
+                  '<',
+                ];
+                final label = labels[index];
+                if (label == '<') {
+                  return KeypadButton(
+                    icon: Icons.backspace_outlined,
+                    onTap: _backspace,
+                  );
+                }
+                return KeypadButton(
+                  label: label,
+                  onTap: () => _appendValue(label),
+                );
+              },
             ),
-            const SizedBox(height: 18),
-            FilledButton(
-              onPressed: store.isSaving ? null : _saveQuickTransaction,
-              child: Text(store.isSaving ? 'Saving...' : 'Add transaction'),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: store.isSaving ? null : _saveQuickTransaction,
+                icon: const Icon(Icons.arrow_forward_rounded),
+                label: Text(store.isSaving ? 'Saving...' : 'Add transaction'),
+              ),
             ),
           ],
         ),
