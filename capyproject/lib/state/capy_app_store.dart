@@ -19,16 +19,60 @@ class CapyAppStore extends ChangeNotifier {
   List<CapyCategory> _categories = const [];
   List<CapyGoal> _goals = const [];
 
+  static const List<CapyCategory> _guestDefaultCategories = [
+    CapyCategory(
+      id: 'default_food',
+      name: 'Food',
+      iconCodePoint: 0xe25a,
+      colorValue: 0xFFC38B55,
+    ),
+    CapyCategory(
+      id: 'default_transport',
+      name: 'Transport',
+      iconCodePoint: 0xe531,
+      colorValue: 0xFF7ABFCF,
+    ),
+    CapyCategory(
+      id: 'default_shopping',
+      name: 'Shopping',
+      iconCodePoint: 0xe59c,
+      colorValue: 0xFFE67D7D,
+    ),
+    CapyCategory(
+      id: 'default_health',
+      name: 'Health',
+      iconCodePoint: 0xe3f3,
+      colorValue: 0xFF6BBF8F,
+    ),
+    CapyCategory(
+      id: 'default_entertainment',
+      name: 'Entertainment',
+      iconCodePoint: 0xe40d,
+      colorValue: 0xFFB087D4,
+    ),
+    CapyCategory(
+      id: 'default_salary',
+      name: 'Salary',
+      iconCodePoint: 0xe227,
+      colorValue: 0xFF5DA65D,
+    ),
+    CapyCategory(
+      id: 'default_pocket',
+      name: 'Pocket',
+      iconCodePoint: 0xe586,
+      colorValue: 0xFF5AA5C8,
+    ),
+  ];
+
   bool get isReady => _isReady;
   bool get isSaving => _isSaving;
   String? get errorMessage => _errorMessage;
   bool get isLoggedIn => _isLoggedIn;
   String? get currentUsername => _currentUser?.email;
   CapyUser? get currentUser => _currentUser;
-  String get currentDisplayName =>
-      _currentUser?.displayName.isNotEmpty == true
-          ? _currentUser!.displayName
-          : _currentUser?.email ?? 'User';
+  String get currentDisplayName => _currentUser?.displayName.isNotEmpty == true
+      ? _currentUser!.displayName
+      : _currentUser?.email ?? 'User';
   double get currentPocketSaved => totalPocketSaved;
   double get currentCashBalance => availableBalance;
   double get currentSavingsGoal => _currentUser?.savingsGoal ?? 0;
@@ -45,6 +89,12 @@ class CapyAppStore extends ChangeNotifier {
         _currentUser = user;
         _isLoggedIn = true;
         await _refreshData();
+      } else {
+        _isLoggedIn = false;
+        _currentUser = null;
+        _transactions = const [];
+        _goals = const [];
+        _ensureGuestCategories();
       }
     } catch (error) {
       _errorMessage = error.toString();
@@ -60,7 +110,14 @@ class CapyAppStore extends ChangeNotifier {
         _currentUser = await _service.currentUser();
         if (_currentUser != null) {
           await _refreshData();
+        } else {
+          _isLoggedIn = false;
+          _transactions = const [];
+          _goals = const [];
+          _ensureGuestCategories();
         }
+      } else {
+        _ensureGuestCategories();
       }
     } catch (error) {
       _errorMessage = error.toString();
@@ -104,8 +161,11 @@ class CapyAppStore extends ChangeNotifier {
   List<double> get weeklyExpensePoints {
     final now = DateTime.now();
     return List<double>.generate(7, (index) {
-      final day = DateTime(now.year, now.month, now.day)
-          .subtract(Duration(days: 6 - index));
+      final day = DateTime(
+        now.year,
+        now.month,
+        now.day,
+      ).subtract(Duration(days: 6 - index));
       return _transactions
           .where(
             (item) =>
@@ -137,12 +197,14 @@ class CapyAppStore extends ChangeNotifier {
     _currentUser = user;
     _errorMessage = null;
     notifyListeners();
-    _refreshData().then((_) {
-      notifyListeners();
-    }).catchError((Object error) {
-      _errorMessage = error.toString();
-      notifyListeners();
-    });
+    _refreshData()
+        .then((_) {
+          notifyListeners();
+        })
+        .catchError((Object error) {
+          _errorMessage = error.toString();
+          notifyListeners();
+        });
   }
 
   void logout() {
@@ -212,7 +274,29 @@ class CapyAppStore extends ChangeNotifier {
     required int colorValue,
   }) async {
     final uid = _currentUser?.id;
-    if (uid == null) return;
+    if (uid == null) {
+      final normalizedName = name.trim().toLowerCase();
+      if (_categories.any(
+        (item) => item.name.trim().toLowerCase() == normalizedName,
+      )) {
+        _errorMessage = 'Category name already exists.';
+        notifyListeners();
+        return;
+      }
+
+      _errorMessage = null;
+      _categories = [
+        ..._categories,
+        CapyCategory(
+          id: 'guest_${DateTime.now().millisecondsSinceEpoch}',
+          name: name.trim(),
+          iconCodePoint: iconCodePoint,
+          colorValue: colorValue,
+        ),
+      ]..sort((left, right) => left.name.compareTo(right.name));
+      notifyListeners();
+      return;
+    }
     await _performWrite(() async {
       final saved = await _service.insertCategory(
         uid,
@@ -254,9 +338,7 @@ class CapyAppStore extends ChangeNotifier {
     if (uid == null) return;
     await _performWrite(() async {
       await _service.updateGoal(uid, goal);
-      _goals = _goals
-          .map((item) => item.id == goal.id ? goal : item)
-          .toList();
+      _goals = _goals.map((item) => item.id == goal.id ? goal : item).toList();
       _sortGoals();
     });
   }
@@ -283,5 +365,12 @@ class CapyAppStore extends ChangeNotifier {
   void _sortGoals() {
     _goals = [..._goals]
       ..sort((left, right) => right.createdAt.compareTo(left.createdAt));
+  }
+
+  void _ensureGuestCategories() {
+    if (_categories.isNotEmpty) {
+      return;
+    }
+    _categories = List<CapyCategory>.from(_guestDefaultCategories);
   }
 }

@@ -55,6 +55,11 @@ class FirebaseService {
       'createdAt': Timestamp.fromDate(now),
     });
 
+    await _db.collection('usernames').doc(normalizedName).set({
+      'uid': uid,
+      'email': email,
+    });
+
     await _seedDefaultCategories(uid);
 
     return CapyUser(
@@ -95,34 +100,10 @@ class FirebaseService {
     if (normalized.contains('@')) return normalized;
 
     final lookupKey = normalized.toLowerCase();
-
-    final usersByUsername = await _db
-        .collection('users')
-        .where('usernameLower', isEqualTo: lookupKey)
-        .limit(1)
-        .get();
-    if (usersByUsername.docs.isNotEmpty) {
-      return usersByUsername.docs.first.data()['email'] as String;
+    final doc = await _db.collection('usernames').doc(lookupKey).get();
+    if (doc.exists && doc.data() != null) {
+      return doc.data()!['email'] as String;
     }
-
-    final usersByDisplayName = await _db
-        .collection('users')
-        .where('displayNameLower', isEqualTo: lookupKey)
-        .limit(1)
-        .get();
-    if (usersByDisplayName.docs.isNotEmpty) {
-      return usersByDisplayName.docs.first.data()['email'] as String;
-    }
-
-    final usersByRawDisplayName = await _db
-        .collection('users')
-        .where('displayName', isEqualTo: normalized)
-        .limit(1)
-        .get();
-    if (usersByRawDisplayName.docs.isNotEmpty) {
-      return usersByRawDisplayName.docs.first.data()['email'] as String;
-    }
-
     return normalized;
   }
 
@@ -185,7 +166,15 @@ class FirebaseService {
   // ─── Categories ───────────────────────────────────────────────────────────
 
   Future<List<CapyCategory>> fetchCategories(String uid) async {
-    final snap = await _db.collection('users/$uid/categories').get();
+    final collection = _db.collection('users/$uid/categories');
+    var snap = await collection.get();
+
+    // Backfill defaults for accounts that were created before rules were fixed.
+    if (snap.docs.isEmpty) {
+      await _seedDefaultCategories(uid);
+      snap = await collection.get();
+    }
+
     return snap.docs.map((d) => _catFromDoc(d.id, d.data())).toList();
   }
 
@@ -267,17 +256,59 @@ class FirebaseService {
 
   Future<void> _seedDefaultCategories(String uid) async {
     const defaults = [
-      {'name': 'Food', 'iconCode': 0xe25a, 'colorValue': 0xFFC38B55},
-      {'name': 'Transport', 'iconCode': 0xe531, 'colorValue': 0xFF7ABFCF},
-      {'name': 'Shopping', 'iconCode': 0xe59c, 'colorValue': 0xFFE67D7D},
-      {'name': 'Health', 'iconCode': 0xe3f3, 'colorValue': 0xFF6BBF8F},
-      {'name': 'Entertainment', 'iconCode': 0xe40d, 'colorValue': 0xFFB087D4},
-      {'name': 'Salary', 'iconCode': 0xe227, 'colorValue': 0xFF5DA65D},
-      {'name': 'Pocket', 'iconCode': 0xe586, 'colorValue': 0xFF5AA5C8},
+      {
+        'id': 'default_food',
+        'name': 'Food',
+        'iconCode': 0xe25a,
+        'colorValue': 0xFFC38B55,
+      },
+      {
+        'id': 'default_transport',
+        'name': 'Transport',
+        'iconCode': 0xe531,
+        'colorValue': 0xFF7ABFCF,
+      },
+      {
+        'id': 'default_shopping',
+        'name': 'Shopping',
+        'iconCode': 0xe59c,
+        'colorValue': 0xFFE67D7D,
+      },
+      {
+        'id': 'default_health',
+        'name': 'Health',
+        'iconCode': 0xe3f3,
+        'colorValue': 0xFF6BBF8F,
+      },
+      {
+        'id': 'default_entertainment',
+        'name': 'Entertainment',
+        'iconCode': 0xe40d,
+        'colorValue': 0xFFB087D4,
+      },
+      {
+        'id': 'default_salary',
+        'name': 'Salary',
+        'iconCode': 0xe227,
+        'colorValue': 0xFF5DA65D,
+      },
+      {
+        'id': 'default_pocket',
+        'name': 'Pocket',
+        'iconCode': 0xe586,
+        'colorValue': 0xFF5AA5C8,
+      },
     ];
     final batch = _db.batch();
     for (final data in defaults) {
-      batch.set(_db.collection('users/$uid/categories').doc(), data);
+      batch.set(
+        _db.collection('users/$uid/categories').doc(data['id']! as String),
+        {
+          'name': data['name'],
+          'iconCode': data['iconCode'],
+          'colorValue': data['colorValue'],
+        },
+      );
     }
     await batch.commit();
   }

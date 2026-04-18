@@ -64,7 +64,7 @@ class _AddCategoryPageState extends State<AddCategoryPage> {
     }
 
     if (store.errorMessage != null) {
-      showSavedMessage(context, 'Category name already exists.');
+      showSavedMessage(context, store.errorMessage!);
       return;
     }
 
