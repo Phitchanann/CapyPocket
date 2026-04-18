@@ -229,9 +229,21 @@ class CapyAppStore extends ChangeNotifier {
   }) async {
     final uid = _currentUser?.id;
     if (uid == null) {
-      _errorMessage = 'Please log in before adding a transaction.';
-      notifyListeners();
-      return false;
+      await _performWrite(() async {
+        final saved = CapyTransaction(
+          id: 'guest_${DateTime.now().millisecondsSinceEpoch}',
+          title: title,
+          category: category,
+          note: note,
+          amount: amount,
+          type: type,
+          createdAt: createdAt ?? DateTime.now(),
+          receiptImageUrl: receiptImageUrl,
+        );
+        _transactions = [saved, ..._transactions];
+        _sortTransactions();
+      });
+      return _errorMessage == null;
     }
     await _performWrite(() async {
       final saved = await _service.insertTransaction(
@@ -254,7 +266,15 @@ class CapyAppStore extends ChangeNotifier {
 
   Future<void> updateTransaction(CapyTransaction transaction) async {
     final uid = _currentUser?.id;
-    if (uid == null) return;
+    if (uid == null) {
+      await _performWrite(() async {
+        _transactions = _transactions
+            .map((item) => item.id == transaction.id ? transaction : item)
+            .toList();
+        _sortTransactions();
+      });
+      return;
+    }
     await _performWrite(() async {
       await _service.updateTransaction(uid, transaction);
       _transactions = _transactions
@@ -266,7 +286,12 @@ class CapyAppStore extends ChangeNotifier {
 
   Future<void> deleteTransaction(String id) async {
     final uid = _currentUser?.id;
-    if (uid == null) return;
+    if (uid == null) {
+      await _performWrite(() async {
+        _transactions = _transactions.where((item) => item.id != id).toList();
+      });
+      return;
+    }
     await _performWrite(() async {
       await _service.deleteTransaction(uid, id);
       _transactions = _transactions.where((item) => item.id != id).toList();
