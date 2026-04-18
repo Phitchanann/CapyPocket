@@ -54,14 +54,14 @@ function BottomNav({ activeTab, onTabChange }) {
   );
 }
 
-export function PhoneShell({ activeTab, onTabChange, children }) {
+export function PhoneShell({ activeTab, onTabChange, hideNav = false, children }) {
   return (
     <div className="relative w-full max-w-[390px] overflow-hidden bg-white/85 shadow-soft sm:h-[812px] sm:rounded-[42px] sm:border sm:border-white/70">
       <div className="absolute inset-x-0 top-0 h-28 bg-capy-glow opacity-80" />
       <div className="relative flex min-h-[100svh] flex-col sm:h-full sm:min-h-0">
         <StatusBar />
-        <main className="screen-scrollbar flex-1 overflow-y-auto px-5 pb-28">{children}</main>
-        <BottomNav activeTab={activeTab} onTabChange={onTabChange} />
+        <main className={`screen-scrollbar flex-1 overflow-y-auto px-5 ${hideNav ? "pb-6" : "pb-28"}`}>{children}</main>
+        {!hideNav && <BottomNav activeTab={activeTab} onTabChange={onTabChange} />}
       </div>
     </div>
   );

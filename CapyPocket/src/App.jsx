@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { PhoneShell } from "./components/PhoneShell";
 import { SectionCard } from "./components/SectionCard";
 import { profileMenu, quickActions, savingGoals, transactions, user, walletCards } from "./data/mockData";
+import { AddTransactionScreen } from "./screens/AddTransactionScreen";
 import { HomeScreen } from "./screens/HomeScreen";
 import { ProfileScreen } from "./screens/ProfileScreen";
 import { SavingsScreen } from "./screens/SavingsScreen";
@@ -57,10 +58,19 @@ function DesktopOverview({ activeTab }) {
 
 export default function App() {
   const [activeTab, setActiveTab] = useState("home");
+  const [modal, setModal] = useState(null); // null | "addTransaction"
+
+  function openAddTransaction() {
+    setModal("addTransaction");
+  }
+
+  function closeModal() {
+    setModal(null);
+  }
 
   const screen = useMemo(() => {
     if (activeTab === "wallet") {
-      return <WalletScreen user={user} walletCards={walletCards} />;
+      return <WalletScreen user={user} walletCards={walletCards} onAddTransaction={openAddTransaction} />;
     }
 
     if (activeTab === "savings") {
@@ -71,7 +81,7 @@ export default function App() {
       return <ProfileScreen user={user} profileMenu={profileMenu} />;
     }
 
-    return <HomeScreen user={user} quickActions={quickActions} transactions={transactions} />;
+    return <HomeScreen user={user} quickActions={quickActions} transactions={transactions} onAddTransaction={openAddTransaction} />;
   }, [activeTab]);
 
   return (
@@ -80,8 +90,12 @@ export default function App() {
       <div className="absolute bottom-10 right-[-7rem] h-72 w-72 rounded-full bg-capy-sage/50 blur-3xl" />
       <div className="relative mx-auto flex min-h-screen max-w-6xl items-center justify-center gap-10 px-0 sm:px-6 lg:px-8">
         <DesktopOverview activeTab={activeTab} />
-        <PhoneShell activeTab={activeTab} onTabChange={setActiveTab}>
-          {screen}
+        <PhoneShell activeTab={activeTab} onTabChange={setActiveTab} hideNav={modal !== null}>
+          {modal === "addTransaction" ? (
+            <AddTransactionScreen onBack={closeModal} />
+          ) : (
+            screen
+          )}
         </PhoneShell>
       </div>
     </div>

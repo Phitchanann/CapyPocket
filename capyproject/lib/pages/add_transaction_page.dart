@@ -7,7 +7,6 @@ import 'package:image_picker/image_picker.dart';
 import '../data/capy_models.dart';
 import '../services/firebase_service.dart';
 import '../state/capy_scope.dart';
-import 'camera_capture_page.dart';
 import 'ui_kit.dart';
 
 class AddTransactionPage extends StatefulWidget {
@@ -104,21 +103,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   // ─── Receipt pick ──────────────────────────────────────────────────────────
 
   Future<void> _openCamera() async {
-    if (kIsWeb) {
-      await _pickSlip(ImageSource.camera);
-      return;
-    }
-    final result = await Navigator.of(context).push<String>(
-      MaterialPageRoute(builder: (_) => const CameraCapturePage()),
-    );
-    if (result != null && mounted) {
-      final file = XFile(result);
-      final bytes = await file.readAsBytes();
-      setState(() {
-        _slipImage = file;
-        _slipBytes = bytes;
-      });
-    }
+    await _pickSlip(ImageSource.camera);
   }
 
   Future<void> _pickSlip(ImageSource source) async {
@@ -516,26 +501,19 @@ class _ReceiptZone extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final hasImage = slipImage != null && (slipBytes != null || !kIsWeb);
+    final hasImage = slipBytes != null;
 
     if (hasImage) {
       return Stack(
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(20),
-            child: kIsWeb && slipBytes != null
-                ? Image.memory(
-                    slipBytes!,
-                    width: double.infinity,
-                    height: 160,
-                    fit: BoxFit.cover,
-                  )
-                : Image.network(
-                    slipImage!.path,
-                    width: double.infinity,
-                    height: 160,
-                    fit: BoxFit.cover,
-                  ),
+            child: Image.memory(
+              slipBytes!,
+              width: double.infinity,
+              height: 160,
+              fit: BoxFit.cover,
+            ),
           ),
           Positioned(
             top: 8,

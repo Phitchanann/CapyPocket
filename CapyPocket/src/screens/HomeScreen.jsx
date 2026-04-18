@@ -4,7 +4,7 @@ import { QuickActionButton } from "../components/QuickActionButton";
 import { SectionCard } from "../components/SectionCard";
 import { TransactionItem } from "../components/TransactionItem";
 
-export function HomeScreen({ user, quickActions, transactions }) {
+export function HomeScreen({ user, quickActions, transactions, onAddTransaction }) {
   return (
     <div className="space-y-5 pb-6 pt-3">
       <header className="animate-rise flex items-start justify-between">
@@ -59,7 +59,17 @@ export function HomeScreen({ user, quickActions, transactions }) {
       <section className="animate-rise space-y-3" style={{ animationDelay: "200ms" }}>
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-black text-capy-cocoa">Recent transactions</h2>
-          <button className="text-sm font-black text-capy-brown/65">See all</button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={onAddTransaction}
+              className="flex items-center gap-1 rounded-full bg-capy-peach px-3 py-1.5 text-xs font-black text-capy-cocoa shadow-sm transition hover:bg-capy-apricot active:scale-95"
+            >
+              <Icon name="plus" className="h-3.5 w-3.5" />
+              Add
+            </button>
+            <button className="text-sm font-black text-capy-brown/65">See all</button>
+          </div>
         </div>
         <div className="space-y-3">
           {transactions.map((transaction) => (
